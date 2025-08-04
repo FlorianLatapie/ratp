@@ -21,7 +21,7 @@ async function getOrCreateLocalStorage() {
         // example line
         const lines = await getLines();
         const myLine = lines.find(line => line.mode === "Metro" && line.shortName === "3");
-
+        const mySecondLine = lines.find(line => line.mode === "Metro" && line.shortName === "8");
         // example station 
         const myLineStations = await getStations(myLine.externalCode);
         const myStation = myLineStations.find(station => station.name === "Parmentier");
@@ -29,7 +29,12 @@ async function getOrCreateLocalStorage() {
         userData = [{
             line: myLine,
             monitoredStations: [myStation]
-        }];
+        },
+        {
+        	line: mySecondLine,
+        	monitoredStations: []
+        }
+        ];
 
         localStorage.setItem("userData", JSON.stringify(userData));
     }
@@ -100,14 +105,17 @@ async function main() {
     userData.forEach(async (data) => {
         // console log disruptions for the line
         const disruptions = await getDisruptionsByLine(data.line.externalCode);
-        disruptions.forEach(disruption => {
-            console.log(`Disruption on line ${data.line.shortName}: ${disruption.message}`);
-        });
-        document.getElementById("disruptions").innerHTML += `<h3>Disruptions de la ligne ${data.line.shortName}</h3>`
-        disruptions.forEach(disruption => {
-            document.getElementById("disruptions").innerHTML += `<p>${disruption.message}</p>`;
-        });
+
+        if (disruptions.length > 0){
+	        document.getElementById("disruptions").innerHTML += `<h3>Perturbations de la ligne ${data.line.shortName}</h3>`
+	        disruptions.forEach(disruption => {
+	            document.getElementById("disruptions").innerHTML += `<p>${disruption.message}</p>`
+	            // document.getElementById("disruptions").innerHTML += `<p>${JSON.stringify(disruption, 2, null)}</p>`;;
+	        });
+	    }
     });
+
+    
 
     // default example
     /*
