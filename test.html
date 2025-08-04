@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @font-face {
+            font-family: 'Parisine Std';
+            src: url('https://corsproxy.io/?url=https://www.ratp.fr/themes/ratp/fonts/Parisine_Std.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            text-align: center;
+            font-family: 'Parisine Std', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+            height: 100vh;
+
+            background-color: #dbdbdb;
+        }
+
+        p {
+            text-align: left;
+        }
+
+        /* on desktop */
+        .PANAM-container {
+            background-color: red;
+            width: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* on mobile */
+        @media (max-width: 600px) {
+            .PANAM-container {
+                width: 100%;
+            }
+        }
+
+        .PANAM-panel {
+            background-color: blue;
+            width: 100%;
+            aspect-ratio: 17 / 7;
+        }
+
+        .line-13 {
+            color: #25303b;
+            background-color: #6EC4E8;
+        }
+
+        .line-11 {
+            color: white;
+            background-color: #704B1C;
+        }
+
+        .line-5 {
+            color: #25303B;
+            background-color: #FF7E2E;
+        }
+
+        .PANAM-header {
+            width: 100%;
+            height: 25%;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1%;
+            padding-left: 3%;
+        }
+
+        .M {
+            height: 100%;
+        }
+
+
+
+        .line-number {
+            height: 100%;
+            aspect-ratio: 1;
+            font-size: clamp(0em, 5vw, 2.3em);
+            font-weight: bold;
+            border-radius: 50%;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding-bottom: 0.2em;
+        }
+
+        .terminus {
+            font-size: clamp(0em, 7vw, 2.5em);
+            font-weight: bold;
+            color: #25303B;
+            padding-bottom: 0.2em;
+        }
+
+        .PANAM-main {
+            padding-left: 1%;
+            padding-right: 1%;
+            width: 100%;
+            height: 65%;
+            background-color: black;
+            display: flex;
+            flex-direction: row;
+            gap: 1%;
+        }
+
+        .incoming-trains-pane {
+            width: 50%;
+            margin-top: 1%;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .incoming-train-line {
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            padding: 2%;
+            font-size: clamp(0em, 3vw, 1.1em);
+            border-radius: 0.3vw;
+            border-left: clamp(0px, 0.7vw, 6px) solid #fff460;
+        }
+
+        .incoming-train-terminus {
+            color: #030d7c;
+        }
+
+        .incoming-train-time {
+            color: #f6c23c;
+            font-weight: bold;
+            background-color: black;
+            width: 20%;
+            text-align: center;
+        }
+
+        .information-pane {
+            background-color: white;
+            width: 50%;
+            margin-top: 1%;
+            border-radius: 0.5vw 0.5vw 0 0;
+            padding: 1%;
+            font-size: clamp(0em, 3vw, 1.1em);
+        }
+
+        .information-text {
+            margin-top: 0.3em;
+            font-size: clamp(0em, 3vw, 0.9em);
+        }
+
+        .information-header {
+            display: flex;
+            height: 20%;
+            align-items: center;
+        }
+
+        .i {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-weight: bold;
+            aspect-ratio: 1;
+            border: #030d7c solid 1px;
+            color: #030d7c;
+            height: 100%;
+            font-size: clamp(0em, 6vw, 1.5em);
+            padding-bottom: 1em;
+            border-radius: 0.3vw;
+
+        }
+
+        .time {
+            color: #f6c23c;
+            background-color: black;
+            height: 100%;
+            padding: 0 1%;
+            border-radius: 0 0 0.3vw 0.3vw;
+            transform: translate(380%, -25%);
+        }
+
+        .PANAM-footer {
+            width: 100%;
+            height: 10%;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="PANAM-container">
+        <div class="PANAM-panel">
+            <div class="PANAM-header">
+                <svg class="M" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 283.46 283.46">
+                    <title>Paris transit icons - Paris Métro</title>
+                    <circle cx="141.73" cy="141.73" r="132.515" fill="#FFF" stroke="#25303B" stroke-width="18.43" />
+                    <path fill="#25303B"
+                        d="M212.25,205.15V81.5c0-7.09-3.9-14.53-15.6-14.53-8.85,0-12.4,3.9-16.29,11.69l-38.27,79.73h-.35L103.11,78.66C99.21,70.87,95.67,67,86.81,67,75.12,67,71.22,74.41,71.22,81.5V205.15c0,6.74,5.32,10.64,11.7,10.64,5.66,0,12-3.9,12-10.64V113h.36L130.4,184.6c2.47,5,5.67,7.8,11.34,7.8s8.85-2.84,11.33-7.8L188.15,113h.36v92.12c0,6.74,6.37,10.64,12.05,10.64,6.37,0,11.69-3.9,11.69-10.64" />
+                </svg>
+                <div class="line-number line-11">11</div>
+                <div class="terminus">Porte de Montreuil</div>
+            </div>
+            <div class="PANAM-main">
+                <div class="incoming-trains-pane">
+                    <div class="incoming-train-line">
+                        <p class="incoming-train-terminus">Asnières - Gennevilliers</p>
+                        <p class="incoming-train-time">1</p>
+                    </div>
+                    <div class="incoming-train-line">
+                        <p class="incoming-train-terminus">Asnières - Gennevilliers</p>
+                        <p class="incoming-train-time">15</p>
+                    </div>
+                    <div class="incoming-train-line">
+                        <p class="incoming-train-terminus">Saint-Denis</p>
+                        <p class="incoming-train-time">5</p>
+                    </div>
+                    <div class="incoming-train-line">
+                        <p class="incoming-train-terminus">Saint-Denis</p>
+                        <p class="incoming-train-time">20</p>
+                    </div>
+                </div>
+                <div class="information-pane">
+                    <div class="information-header">
+                        <div class="i">i</div>
+                        <p class="time">16:15</p>
+                    </div>
+                    <p class="information-text">Attentifs ensemble * Signaler à nos agents tout objet abandonné ou
+                        situation inhabituelle</p>
+                </div>
+            </div>
+            <div class="PANAM-footer line-11"></div>
+        </div>
+    </div>
+    <div class="PANAM-container">
+        <div class="PANAM-panel">
+            <div class="PANAM-header">
+                <svg class="M" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 283.46 283.46">
+                    <title>Paris transit icons - Paris Métro</title>
+                    <circle cx="141.73" cy="141.73" r="132.515" fill="#FFF" stroke="#25303B" stroke-width="18.43" />
+                    <path fill="#25303B"
+                        d="M212.25,205.15V81.5c0-7.09-3.9-14.53-15.6-14.53-8.85,0-12.4,3.9-16.29,11.69l-38.27,79.73h-.35L103.11,78.66C99.21,70.87,95.67,67,86.81,67,75.12,67,71.22,74.41,71.22,81.5V205.15c0,6.74,5.32,10.64,11.7,10.64,5.66,0,12-3.9,12-10.64V113h.36L130.4,184.6c2.47,5,5.67,7.8,11.34,7.8s8.85-2.84,11.33-7.8L188.15,113h.36v92.12c0,6.74,6.37,10.64,12.05,10.64,6.37,0,11.69-3.9,11.69-10.64" />
+                </svg>
+                <div class="line-number line-13">13</div>
+                <div class="terminus">Porte de Montreuil</div>
+            </div>
+            <div class="PANAM-main">
+                <div class="incoming-trains-pane"></div>
+                <div class="information-pane">
+                    <div class="information-header">
+                        <div class="i">i</div>
+                        <p class="time">16:15</p>
+                    </div>
+                    <p class="information-text">Jusqu'au 3 août, le trafic est interrompu entre Opéra et Gallieni en
+                        raison de travaux.<br>Bus de
+                        remplacement entre République et Gallieni.</p>
+                </div>
+            </div>
+            <div class="PANAM-footer line-13"></div>
+        </div>
+    </div>
+    <div class="PANAM-container">
+        <div class="PANAM-panel">
+            <div class="PANAM-header">
+                <svg class="M" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 283.46 283.46">
+                    <title>Paris transit icons - Paris Métro</title>
+                    <circle cx="141.73" cy="141.73" r="132.515" fill="#FFF" stroke="#25303B" stroke-width="18.43" />
+                    <path fill="#25303B"
+                        d="M212.25,205.15V81.5c0-7.09-3.9-14.53-15.6-14.53-8.85,0-12.4,3.9-16.29,11.69l-38.27,79.73h-.35L103.11,78.66C99.21,70.87,95.67,67,86.81,67,75.12,67,71.22,74.41,71.22,81.5V205.15c0,6.74,5.32,10.64,11.7,10.64,5.66,0,12-3.9,12-10.64V113h.36L130.4,184.6c2.47,5,5.67,7.8,11.34,7.8s8.85-2.84,11.33-7.8L188.15,113h.36v92.12c0,6.74,6.37,10.64,12.05,10.64,6.37,0,11.69-3.9,11.69-10.64" />
+                </svg>
+                <div class="line-number line-5">5</div>
+                <div class="terminus">Porte de Montreuil</div>
+            </div>
+            <div class="PANAM-main">
+                <div class="incoming-trains-pane"></div>
+                <div class="information-pane">
+                    <div class="information-header">
+                        <div class="i">i</div>
+                        <p class="time">16:15</p>
+                    </div>
+                    <p class="information-text">Fermeture de la Gare d'Austerlitz : privilégier la station Saint-Marcel
+                        pour rejoindre la gare à
+                        pied depuis la ligne 5.</p>
+                </div>
+            </div>
+            <div class="PANAM-footer line-5"></div>
+        </div>
+    </div>
+</body>
+
+</html>
