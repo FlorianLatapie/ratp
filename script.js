@@ -219,7 +219,6 @@ async function main() {
     loadinfo.innerHTML = "Utilisateur localisé, stations récupérées";
 
     // Display disruptions
-    /*
     document.getElementById("disruptions").innerHTML = "";
 
     let linesWithoutDisruptions = [];
@@ -263,7 +262,7 @@ async function main() {
     // Display next arrivals
 
     loadinfo.innerHTML = "Perturbations créées, prochaines arrivées en cours de chargement ...";
-*/
+
 
     const container = document.getElementById("nextArrivalsContainer");
     container.innerHTML = "";
