@@ -27,10 +27,8 @@ async function getLocation() {
 
 async function getStationsFromLocation() {
     const location = await getLocation();
-    console.log("location", location);
     const lat = location.coords.latitude;
     const lon = location.coords.longitude;
-    console.log("lat", lat.toString().replace(".", ","), "lon", lon.toString().replace(".", ","));
 
     const requestOptions = {
         headers: {
@@ -48,7 +46,6 @@ async function getStationsFromLocation() {
     const BBOX = `BBOX(geometry,${xMin},${yMin},${xMax},${yMax},'EPSG:4326')`;
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${BBOX}`, requestOptions);
     const data = await response.json();
-    console.log("data", data);
 
     const allLines = await getLines();
 
@@ -88,8 +85,6 @@ async function getStationsFromLocation() {
             });
         }
     });
-
-    console.log("userData", userData);
     return userData;
 }
 
@@ -231,10 +226,10 @@ async function main() {
             document.getElementById("disruptions").innerHTML += html;
         })
     );
-
+/* 
     if (linesWithoutDisruptions.length > 0) {
         document.getElementById("disruptions").innerHTML += `<h2>Pas de perturbations pour le moment pour les lignes : ${linesWithoutDisruptions.map(line => line.shortName).join(", ")}</h2>`;
-    }
+    } */
 
     // Display next arrivals
 
