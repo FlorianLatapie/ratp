@@ -254,10 +254,10 @@ async function main() {
             document.getElementById("disruptions").innerHTML += html;
         })
     );
-    /* 
+    /*
         if (linesWithoutDisruptions.length > 0) {
             document.getElementById("disruptions").innerHTML += `<h2>Pas de perturbations pour le moment pour les lignes : ${linesWithoutDisruptions.map(line => line.shortName).join(", ")}</h2>`;
-        } 
+        } */
 
     // Display next arrivals
 
