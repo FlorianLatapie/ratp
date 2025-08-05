@@ -67,11 +67,18 @@ async function getStationsFromLocation() {
     const yMin = lat - modifyY;
     const yMax = lat + modifyY;
 
+    let loadinfo = document.getElementById("loadinfo");
+    loadinfo.innerHTML = `Localisation récupérée, recherche des stations à proximité ...<br/>Latitude : ${lat}, Longitude : ${lon}`;
+
     const BBOX = `BBOX(geometry,${xMin},${yMin},${xMax},${yMax},'EPSG:4326')`;
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${BBOX}`, requestOptions);
     const data = await response.json();
 
+    loadinfo.innerHTML = `Stations à proximité récupérées, récupération des informations sur les lignes ...`;
+
     const allLines = await getLines();
+
+    loadinfo.innerHTML = `Informations sur les lignes récupérées, préparation des données ...`;
 
     let userData = [];
     data.features.forEach(station => {
@@ -111,6 +118,8 @@ async function getStationsFromLocation() {
             });
         }
     });
+
+    loadinfo.innerHTML = `Données préparées`;
     return userData;
 }
 
