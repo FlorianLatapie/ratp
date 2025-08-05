@@ -42,87 +42,90 @@ async function getLocation() {
                 }
 
                 reject(error);
+            },
+            {
+                enableHighAccuracy: false, // should be faster on Android
             }
         );
     });
 }
 
+const R_KM = 6371; // Earth's radius in kilometers (saves division)
+const DEG_TO_RAD = Math.PI / 180; // Pre-calculated conversion factor
 
+function getDistance(lat1, lon1, lat2, lon2) {
+    // Convert to radians in one go
+    const φ1 = lat1 * DEG_TO_RAD;
+    const φ2 = lat2 * DEG_TO_RAD;
+    const Δφ = (lat2 - lat1) * DEG_TO_RAD;
+    const Δλ = (lon2 - lon1) * DEG_TO_RAD;
 
-async function getStationsFromLocation() {
-    let loadinfo = document.getElementById("loadinfo");
-    loadinfo.innerHTML = `Récupération de la position ...`;
+    // Calculate half-chord distances
+    const sinΔφ2 = Math.sin(Δφ * 0.5);
+    const sinΔλ2 = Math.sin(Δλ * 0.5);
 
-    const location = await getLocation();
-    const lat = location.coords.latitude;
-    const lon = location.coords.longitude;
+    const a = sinΔφ2 * sinΔφ2 + Math.cos(φ1) * Math.cos(φ2) * sinΔλ2 * sinΔλ2;
 
-    const requestOptions = {
-        headers: {
-            "Apikey": API_KEY,
-        }
-    };
+    // Use 2 * asin instead of 2 * atan2 for better performance
+    return R_KM * 2 * Math.asin(Math.sqrt(a));
+}
 
+async function getStationsAndLinesFromLocation(lat, lon) {
     const modifyX = 0.0055;
     const modifyY = 0.004;
-    const xMin = lon - modifyX;
-    const xMax = lon + modifyX;
-    const yMin = lat - modifyY;
-    const yMax = lat + modifyY;
+    const bbox = `BBOX(geometry,${lon - modifyX},${lat - modifyY},${lon + modifyX},${lat + modifyY},'EPSG:4326')`;
 
-    loadinfo.innerHTML = `Localisation récupérée, recherche des stations à proximité ...<br/>Latitude : ${lat}, Longitude : ${lon}`;
+    const url = `https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${bbox}`;
 
-    const BBOX = `BBOX(geometry,${xMin},${yMin},${xMax},${yMax},'EPSG:4326')`;
-    const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${BBOX}`, requestOptions);
-    const data = await response.json();
+    const [stationsResponse, allLines] = await Promise.all([
+        fetch(url, { headers: { "Apikey": API_KEY } }),
+        getLines()
+    ]);
 
-    loadinfo.innerHTML = `Stations à proximité récupérées, récupération des informations sur les lignes ...`;
+    const data = await stationsResponse.json();
+    const linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
+    const nearbyStationsMap = new Map();
+    const nearbyLinesMap = new Map();
 
-    const allLines = await getLines();
-
-    loadinfo.innerHTML = `Informations sur les lignes récupérées, préparation des données ...`;
-
-    let userData = [];
     data.features.forEach(station => {
-        const lineExternalCode = station.properties.lineId;
-        const lineShortName = allLines.find(line => line.externalCode === lineExternalCode).shortName;
+        const { lineId, stopAreaId, name } = station.properties;
+        const coordinates = station.geometry.coordinates;
 
-        // Check if this line already exists in userData
-        const existingLineIndex = userData.findIndex(item => item.line.externalCode === lineExternalCode);
+        if (!nearbyStationsMap.has(stopAreaId)) {
+            nearbyStationsMap.set(stopAreaId, {
+                id: stopAreaId,
+                name,
+                coordinates,
+                lines: []
+            });
+        }
 
-        if (existingLineIndex !== -1) {
-            // Line exists, check if station already exists in monitoredStations array
-            const stationId = station.properties.stopAreaId;
-            const stationExists = userData[existingLineIndex].monitoredStations.some(
-                existingStation => existingStation.id === stationId
-            );
+        const stationData = nearbyStationsMap.get(stopAreaId);
 
-            // Only add if the station doesn't already exist
-            if (!stationExists) {
-                userData[existingLineIndex].monitoredStations.push({
-                    id: stationId,
-                    name: station.properties.name,
-                    coordinates: station.geometry.coordinates
-                });
-            }
-        } else {
-            // Line doesn't exist, create new entry
-            userData.push({
-                line: {
-                    shortName: lineShortName,
-                    externalCode: lineExternalCode,
-                },
-                monitoredStations: [{
-                    id: station.properties.stopAreaId,
-                    name: station.properties.name,
-                    coordinates: station.geometry.coordinates
-                }]
+        if (!stationData.lines.some(line => line.externalCode === lineId)) {
+            stationData.lines.push({
+                shortName: linesMap.get(lineId),
+                externalCode: lineId
+            });
+        }
+
+        if (!nearbyLinesMap.has(lineId)) {
+            nearbyLinesMap.set(lineId, {
+                shortName: linesMap.get(lineId),
+                externalCode: lineId,
             });
         }
     });
 
-    loadinfo.innerHTML = `Données préparées`;
-    return userData;
+    const output = {
+        stations: Array.from(nearbyStationsMap.values()).sort((a, b) => {
+            const distA = getDistance(lat, lon, a.coordinates[1], a.coordinates[0]);
+            const distB = getDistance(lat, lon, b.coordinates[1], b.coordinates[0]);
+            return distA - distB;
+        }),
+        lines: Array.from(nearbyLinesMap.values()).sort((a, b) => a.externalCode.localeCompare(b.externalCode))
+    };
+    return output;
 }
 
 // tooling
@@ -164,7 +167,7 @@ async function getStations(lineId) {
     return data.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function getDisruptions() {
+async function getDisruptions(lines) {
     const requestOptions = {
         headers: {
             "Apikey": API_KEY,
@@ -174,18 +177,53 @@ async function getDisruptions() {
 
     const response = await fetch("https://api-iv.iledefrance-mobilites.fr/disruptions/v2", requestOptions);
     const data = await response.json();
-    return data;
+
+    let output = {
+        linesOK: [],
+        disruptedLines: []
+    }
+
+    lines.forEach(line => {
+        const linesImpacted = data.lines.find(disruption => disruption.id == line.externalCode);
+        if (!linesImpacted) {
+            output.linesOK.push({ line: line });
+            return;
+        }
+        const disruptionsIds = linesImpacted.impactedObjects.flatMap(did => did.disruptionIds);
+        const disruptionMessages = data.disruptions.filter(disruption => disruptionsIds.includes(disruption.id));
+
+        const now = new Date();
+
+        // filter out messages that are not relevant now
+        const relevantDisruptionMessages = disruptionMessages.filter(message => {
+            return message.applicationPeriods.some(period => {
+                const begin = YYYYMMDDTHHMMSStoDate(period.begin);
+                if (begin > now) {
+                    return false; // not started yet
+                }
+
+                // available disruption.cause values : "INFORMATION", "TRAVAUX", "PERTURBATION"
+                if (message.cause === "INFORMATION") {
+                    return false; // ignore information messages
+                }
+                return true;
+
+            });
+        });
+
+        if (relevantDisruptionMessages.length === 0) {
+            output.linesOK.push({ line: line });
+            return;
+        }
+
+        output.disruptedLines.push({
+            line: line,
+            messages: relevantDisruptionMessages
+        });
+    });
+    return output;
 }
 
-async function getDisruptionsByLine(lineId) {
-    const disruptions = await getDisruptions();
-    const disruptedInfos = disruptions.lines.filter(disruption => disruption.id === lineId)
-
-    const disruptionsIds = disruptedInfos.flatMap(info => info.impactedObjects.flatMap(did => did.disruptionIds));
-
-    // Get the disruptions details for the collected IDs
-    return disruptions.disruptions.filter(disruption => disruptionsIds.includes(disruption.id));
-}
 
 // todo set realtime info in each train object not in the function return
 async function getNextTrains(lineId, stationId) {
@@ -220,148 +258,130 @@ async function getNextTrains(lineId, stationId) {
     return { nextTrainsAtMyStation: allDepartures, realtime: true };
 }
 
+function populateDisruptions(disruptions) {
+    const disruptionsContainer = document.getElementById("disruptions");
+    disruptionsContainer.innerHTML = "<h2>Perturbations</h2>"; // Clear previous content
+    /*if (disruptions.linesOK.length > 0) {
+        disruptionsContainer.innerHTML += `<p>Pas de perturbations pour le moment pour les lignes : ${disruptions.linesOK.map(line => line.line.shortName).join(", ")}</p>`;
+    }*/
+    disruptions.disruptedLines.forEach(disruptedLine => {
+        const line = disruptedLine.line;
+        disruptionsContainer.innerHTML += `<h3 class="ligne-${line.shortName}">Ligne ${line.shortName}</h3>`;
+        disruptedLine.messages.forEach(message => {
+            disruptionsContainer.innerHTML += `<p>${message.message}</p>`;
+        });
+    });
+}
+
+function populateStations(stations) {
+    const stationsContainer = document.getElementById("nextArrivalsContainer");
+    stationsContainer.innerHTML = "<h2>Stations proches</h2>"; // Clear previous content
+
+    stations.forEach(station => {
+        const stationDiv = document.createElement("div");
+        stationDiv.className = "station";
+        stationDiv.innerHTML = `<h3 class="station-name">${station.name}</h3>`;
+        stationsContainer.appendChild(stationDiv);
+
+        const linesList = document.createElement("div");
+
+        station.lines.forEach(line => {
+            const lineItem = document.createElement("div");
+            const lineTitle = document.createElement("h4");
+            lineTitle.textContent = `Ligne ${line.shortName}`;
+            lineTitle.className = `ligne-${line.shortName}`;
+            lineItem.appendChild(lineTitle);
+            linesList.appendChild(lineItem);
+
+            // Conteneur pour séparer les terminus
+            const directionsContainer = document.createElement("div");
+            directionsContainer.className = "directions-container";
+            lineItem.appendChild(directionsContainer);
+
+            // fetch next arrivals for this line at this station
+            getNextTrains(line.externalCode, station.id).then(({ nextTrainsAtMyStation, realtime }) => {
+                const directionsMap = {};
+
+                // Grouper les trains par terminus (direction)
+                nextTrainsAtMyStation.forEach(train => {
+                    if (!directionsMap[train.lineDirection]) {
+                        directionsMap[train.lineDirection] = [];
+                    }
+                    directionsMap[train.lineDirection].push(train);
+                });
+
+                // sort directionsMap by train.lineDirection alphabetically
+                Object.keys(directionsMap).sort().forEach(direction => {
+
+                });
+
+                // Pour chaque terminus, créer un sous-titre et une liste des trains
+                Object.keys(directionsMap).forEach(direction => {
+                    const directionDiv = document.createElement("div");
+                    directionDiv.className = "direction-section";
+                    directionDiv.innerHTML = `<h5>${direction}</h5>`;
+                    const trainsList = document.createElement("ul");
+                    trainsList.className = "trains-list";
+                    directionsMap[direction].forEach(train => {
+                        const trainItem = document.createElement("li");
+                        trainItem.className = "train-item";
+
+                        const timeUntilNextTrain = Date.parse(train.expectedArrivalTime) - Date.now();
+                        const minutes = Math.floor(timeUntilNextTrain / 60000);
+                        const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
+                        if (minutes < 0) {
+                            trainItem.textContent = "À l'approche";
+                        } else {
+                            if (realtime) {
+                                trainItem.textContent = `${minutes} min ${seconds} sec`;
+                            } else {
+                                // trainItem.textContent = train.expectedArrivalTime
+                                trainItem.textContent = `${new Date(train.expectedArrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (théorique)`;
+                            }
+                        }
+                        trainsList.appendChild(trainItem);
+                    });
+                    directionDiv.appendChild(trainsList);
+                    directionsContainer.appendChild(directionDiv);
+
+                });
+            });
+        });
+
+        stationDiv.appendChild(linesList);
+    });
+}
+
+
 async function main() {
     // setup
     API_KEY = await getApikey();
     let loadinfo = document.getElementById("loadinfo");
-    loadinfo.innerHTML = "Clé d'API chargée, récupération de la position et des stations proches";
+    loadinfo.innerHTML = "Clé d'API chargée, récupération de la position...";
 
-    let userData = await getStationsFromLocation();
-    loadinfo.innerHTML = "Utilisateur localisé, stations récupérées";
+    let { coords: { latitude: lat, longitude: lon } } = await getLocation();
+    // const {lat, lon}  = {lat:48.8677097, lon:2.3639890};
+    loadinfo.innerHTML = "Position récupérée, récupération des stations proches...";
 
-    // Display disruptions
-    document.getElementById("disruptions").innerHTML = "";
+    let { stations, lines } = await getStationsAndLinesFromLocation(lat, lon);
 
-    let linesWithoutDisruptions = [];
-    await Promise.all(
-        userData.map(async (data) => { // forEach line but returns so the "Promise.all" is happy
-            const disruptions = await getDisruptionsByLine(data.line.externalCode);
+    loadinfo.innerHTML = "Stations proches récupérées, récupération des perturbations...";
 
-            if (disruptions.length === 0) {
-                linesWithoutDisruptions.push(data.line);
-                return;
-            }
+    // Display stations
+    const disruptions = await getDisruptions(lines);
 
-            const validDisruptions = disruptions.filter(disruption => {
-                const isNow = disruption.applicationPeriods.some(period =>
-                    YYYYMMDDTHHMMSStoDate(period.begin) <= new Date()
-                );
-                // available disruption.cause values : "INFORMATION", "TRAVAUX", "PERTURBATION"
-                return isNow && disruption.cause !== "INFORMATION";
-            });
+    loadinfo.innerHTML = "Perturbations récupérées, affichage des perturbations...";
 
+    populateDisruptions(disruptions);
 
-            let html = '';
+    loadinfo.innerHTML = "Perturbations affichées, affichage des stations proches...";
 
-            if (validDisruptions.length > 0) {
-                html += `<h3>Perturbations de la ligne ${data.line.shortName}</h3>`;
-                validDisruptions.forEach(disruption => {
-                    html += `<p>${disruption.message}</p>`;
-                });
-            } else {
-                linesWithoutDisruptions.push(data.line);
-            }
+    populateStations(stations);
 
-            document.getElementById("disruptions").innerHTML += html;
-        })
-    );
-    /*
-        if (linesWithoutDisruptions.length > 0) {
-            document.getElementById("disruptions").innerHTML += `<h2>Pas de perturbations pour le moment pour les lignes : ${linesWithoutDisruptions.map(line => line.shortName).join(", ")}</h2>`;
-        } */
+    loadinfo.innerHTML = `Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
-    // Display next arrivals
-
-    loadinfo.innerHTML = "Perturbations créées, prochaines arrivées en cours de chargement ...";
-
-
-    const container = document.getElementById("nextArrivalsContainer");
-    container.innerHTML = "";
-
-    const arrivalsByLineAndDirection = {};
-
-    await Promise.all(
-        userData.map(async (data) => {
-            await Promise.all(
-                data.monitoredStations.map(async (station) => {
-                    const { nextTrainsAtMyStation, realtime } = await getNextTrains(data.line.externalCode, station.id);
-                    nextTrainsAtMyStation.forEach((train) => {
-                        const timeUntilNextTrain = Date.parse(train.expectedArrivalTime) - Date.now();
-                        const minutes = Math.floor(timeUntilNextTrain / 60000);
-                        const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
-
-                        const lineName = data.line.shortName;
-                        const direction = train.lineDirection;
-
-                        if (!arrivalsByLineAndDirection[lineName]) {
-                            arrivalsByLineAndDirection[lineName] = {};
-                        }
-                        if (!arrivalsByLineAndDirection[lineName][station.name]) {
-                            arrivalsByLineAndDirection[lineName][station.name] = {};
-                        }
-                        if (!arrivalsByLineAndDirection[lineName][station.name][direction]) {
-                            arrivalsByLineAndDirection[lineName][station.name][direction] = [];
-                        }
-
-                        arrivalsByLineAndDirection[lineName][station.name][direction].push({
-                            minutes: minutes,
-                            seconds: seconds,
-                            date: Date.parse(train.expectedArrivalTime),
-                            realtime: realtime,
-                        });
-                    });
-                })
-            );
-        })
-    );
-
-    loadinfo.innerHTML = "Prochaines arrivées chargées";
-
-    // Insert into DOM
-    Object.keys(arrivalsByLineAndDirection).forEach((lineName) => {
-        const lineDiv = document.createElement("div");
-        lineDiv.className = "line";
-        const lineTitle = document.createElement("h2");
-        lineTitle.textContent = `Ligne ${lineName}`;
-        lineDiv.appendChild(lineTitle);
-
-        const stations = arrivalsByLineAndDirection[lineName];
-        Object.keys(stations).forEach((stationName) => {
-            const stationDiv = document.createElement("div");
-            stationDiv.className = "station";
-            const stationTitle = document.createElement("h3");
-            stationTitle.textContent = `Station : ${stationName}`;
-            stationDiv.appendChild(stationTitle);
-            const directions = stations[stationName];
-
-            Object.keys(directions).forEach((direction) => {
-                const directionDiv = document.createElement("div");
-                directionDiv.className = "direction";
-                const directionTitle = document.createElement("h4");
-                directionTitle.textContent = `Direction : ${direction}`;
-                directionDiv.appendChild(directionTitle);
-                directions[direction].forEach((timeObj) => {
-                    const timeP = document.createElement("p");
-                    if (timeObj.realtime) {
-                        if (timeObj.minutes < 0) {
-                            timeP.textContent = "À l'approche";
-                        } else {
-                            timeP.textContent = `${timeObj.minutes}m ${timeObj.seconds}s`;
-                        }
-                    } else {
-                        timeP.textContent = `À ${new Date(timeObj.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (horaire théorique)`;
-                    }
-                    directionDiv.appendChild(timeP);
-                });
-                stationDiv.appendChild(directionDiv);
-            });
-
-            lineDiv.appendChild(stationDiv);
-        });
-        container.appendChild(lineDiv);
-    });
-
-    loadinfo.innerHTML = `Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' , second: '2-digit' })}`;
+    const footer = document.querySelector("footer");
+    footer.style.display = "block";
 }
 
 main()

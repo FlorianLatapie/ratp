@@ -4,15 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <script src="script.js" type="module"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RATP</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div id="loadinfo">Préparation</div>
-    <div id="disruptions">Chargement des données...</div>
+    <p id="loadinfo">Préparation...</p>
+    <div id="disruptions"></div>
     <div id="nextArrivalsContainer"></div>
-    <div>
+    <footer style="display: none;">
+        <h3 class="station-name">Crédits</h3>
         <p>Développé par <a href="https://github.com/FlorianLatapie" target="_blank">Florian Latapie</a></p>
-    </div>
+    </footer>
 </body>
 
 </html>
