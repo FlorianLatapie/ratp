@@ -1,4 +1,5 @@
 let API_KEY = "";
+let userCoordinates = [0, 0]; // to be set later
 
 // setup shit
 
@@ -15,19 +16,45 @@ async function getApikey() {
 
 async function getLocation() {
     return new Promise((resolve, reject) => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(resolve, reject);
-        } else {
-            reject(new Error("Geolocation is not supported by this browser."));
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by this browser.");
+            return reject(new Error("Geolocation is not supported by this browser."));
         }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve(position);
+            },
+            (error) => {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert("You have blocked location access. Please enable it in your browser settings.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert("Location information is unavailable.");
+                        break;
+                    case error.TIMEOUT:
+                        alert("The request to get your location timed out.");
+                        break;
+                    case error.UNKNOWN_ERROR:
+                    default:
+                        alert("An unknown error occurred while trying to fetch your location.");
+                        break;
+                }
+
+                reject(error);
+            }
+        );
     });
 }
+
 
 
 async function getStationsFromLocation() {
     const location = await getLocation();
     const lat = location.coords.latitude;
     const lon = location.coords.longitude;
+    userCoordinates = [lon, lat]; // store user coordinates for later use
 
     const requestOptions = {
         headers: {
@@ -68,6 +95,7 @@ async function getStationsFromLocation() {
                 userData[existingLineIndex].monitoredStations.push({
                     id: stationId,
                     name: station.properties.name,
+                    coordinates: station.geometry.coordinates
                 });
             }
         } else {
@@ -80,6 +108,7 @@ async function getStationsFromLocation() {
                 monitoredStations: [{
                     id: station.properties.stopAreaId,
                     name: station.properties.name,
+                    coordinates: station.geometry.coordinates
                 }]
             });
         }
@@ -162,7 +191,8 @@ async function getNextTrains(lineId, stationId) {
     let allDepartures = data.nextDepartures.data;
 
 
-    if (data.nextDepartures.statusCode != "200" && data.nextDepartures.errorMessage == "NO_REALTIME_SCHEDULES_FOUND") {
+    // if (data.nextDepartures.statusCode != "200" && data.nextDepartures.errorMessage == "NO_REALTIME_SCHEDULES_FOUND") {
+    if (allDepartures.length < 5) {
         const numberOfItems = 4; // default value
         const fallbackResponse = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/${lineId}/stop_areas/${stationId}/schedules/v2?items_per_schedule=${numberOfItems}&from_datetime=${new Date().toISOString()}`, requestOptions);
         const fallbackData = await fallbackResponse.json();
@@ -223,10 +253,10 @@ async function main() {
             document.getElementById("disruptions").innerHTML += html;
         })
     );
-/* 
-    if (linesWithoutDisruptions.length > 0) {
-        document.getElementById("disruptions").innerHTML += `<h2>Pas de perturbations pour le moment pour les lignes : ${linesWithoutDisruptions.map(line => line.shortName).join(", ")}</h2>`;
-    } */
+    /* 
+        if (linesWithoutDisruptions.length > 0) {
+            document.getElementById("disruptions").innerHTML += `<h2>Pas de perturbations pour le moment pour les lignes : ${linesWithoutDisruptions.map(line => line.shortName).join(", ")}</h2>`;
+        } */
 
     // Display next arrivals
 
@@ -234,7 +264,7 @@ async function main() {
     const container = document.getElementById("nextArrivalsContainer");
     container.innerHTML = "";
 
-    const arrivalsByLineAndDirection = {}; // { lineShortName: { direction: [times] } }
+    const arrivalsByLineAndDirection = {};
 
     await Promise.all(
         userData.map(async (data) => {
@@ -263,7 +293,7 @@ async function main() {
                             minutes: minutes,
                             seconds: seconds,
                             date: Date.parse(train.expectedArrivalTime),
-                            realtime: realtime
+                            realtime: realtime,
                         });
                     });
                 })
