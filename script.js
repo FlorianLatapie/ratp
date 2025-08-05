@@ -14,32 +14,110 @@ async function getApikey() {
     return output;
 }
 
+async function getLocation() {
+    return new Promise((resolve, reject) => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(resolve, reject);
+        } else {
+            reject(new Error("Geolocation is not supported by this browser."));
+        }
+    });
+}
+
+function haversineDistance(aLat, aLng, bLat, bLng) {
+    // https://github.com/dcousens/haversine-distance/blob/main/index.js
+    const atan2 = Math.atan2
+    const cos = Math.cos
+    const sin = Math.sin
+    const sqrt = Math.sqrt
+    const PI = Math.PI
+
+    // equatorial mean radius of Earth (in meters)
+    const R = 6378137
+
+    function squared(x) { return x * x }
+    function hav(x) {
+        return squared(sin(x / 2))
+    }
+
+    function toRad(x) { return x * PI / 180.0 }
+    aLat = toRad(aLat)
+    aLng = toRad(aLng)
+    bLat = toRad(bLat)
+    bLng = toRad(bLng)
+
+    // hav(theta) = hav(bLat - aLat) + cos(aLat) * cos(bLat) * hav(bLon - aLon)
+    const ht = hav(bLat - aLat) + cos(aLat) * cos(bLat) * hav(bLng - aLng)
+    return 2 * R * atan2(sqrt(ht), sqrt(1 - ht))
+}
+
+
 async function getStationsFromLocation() {
-    // mock data
-    let userData = {}
+    const location = await getLocation();
+    console.log("location", location);
+    const lat = location.coords.latitude;
+    const lon = location.coords.longitude;
+    console.log("lat", lat.toString().replace(".", ","), "lon", lon.toString().replace(".", ","));
 
-    // example line
-    const lines = await getLines();
-    const myLine = lines.find(line => line.mode === "Metro" && line.shortName === "3");
-    const mySecondLine = lines.find(line => line.mode === "Metro" && line.shortName === "8");
-    // example station 
-    const myLineStations = await getStations(myLine.externalCode);
-    const myStation = myLineStations.find(station => station.name === "Parmentier");
-    const mySecondLineStations = await getStations(mySecondLine.externalCode);
-    const mySecondStation = mySecondLineStations.find(station => station.name === "Filles du Calvaire");
+    const requestOptions = {
+        headers: {
+            "Apikey": API_KEY,
+            //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
+        }
+    };
 
-    userData = [
-        {
-            line: mySecondLine,
-            monitoredStations: [mySecondStation]
-        }, {
-            line: myLine,
-            monitoredStations: [myStation]
-        },
-    ];
+    const modifyX = 0.0055;
+    const modifyY = 0.004;
+    const xMin = lon - modifyX; // 2...
+    const xMax = lon + modifyX; // 2...
+    const yMin = lat - modifyY; // 48.8...
+    const yMax = lat + modifyY; // 48.8...
 
-    // sort UserData by line shortName
-    userData.sort((a, b) => a.line.shortName.localeCompare(b.line.shortName));
+    const BBOX = `BBOX(geometry,${xMin},${yMin},${xMax},${yMax},'EPSG:4326')`;
+    const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${BBOX}`, requestOptions);
+    const data = await response.json();
+    console.log("data", data);
+
+    const allLines = await getLines();
+
+    let userData = [];
+    data.features.forEach(station => {
+        const lineExternalCode = station.properties.lineId;
+        const lineShortName = allLines.find(line => line.externalCode === lineExternalCode).shortName;
+
+        // Check if this line already exists in userData
+        const existingLineIndex = userData.findIndex(item => item.line.externalCode === lineExternalCode);
+
+        if (existingLineIndex !== -1) {
+            // Line exists, check if station already exists in monitoredStations array
+            const stationId = station.properties.stopAreaId;
+            const stationExists = userData[existingLineIndex].monitoredStations.some(
+                existingStation => existingStation.id === stationId
+            );
+
+            // Only add if the station doesn't already exist
+            if (!stationExists) {
+                userData[existingLineIndex].monitoredStations.push({
+                    id: stationId,
+                    name: station.properties.name,
+                });
+            }
+        } else {
+            // Line doesn't exist, create new entry
+            userData.push({
+                line: {
+                    shortName: lineShortName,
+                    externalCode: lineExternalCode,
+                },
+                monitoredStations: [{
+                    id: station.properties.stopAreaId,
+                    name: station.properties.name,
+                }]
+            });
+        }
+    });
+
+    console.log("userData", userData);
     return userData;
 }
 
@@ -214,11 +292,14 @@ async function main() {
                         if (!arrivalsByLineAndDirection[lineName]) {
                             arrivalsByLineAndDirection[lineName] = {};
                         }
-                        if (!arrivalsByLineAndDirection[lineName][direction]) {
-                            arrivalsByLineAndDirection[lineName][direction] = [];
+                        if (!arrivalsByLineAndDirection[lineName][station.name]) {
+                            arrivalsByLineAndDirection[lineName][station.name] = {};
+                        }
+                        if (!arrivalsByLineAndDirection[lineName][station.name][direction]) {
+                            arrivalsByLineAndDirection[lineName][station.name][direction] = [];
                         }
 
-                        arrivalsByLineAndDirection[lineName][direction].push({
+                        arrivalsByLineAndDirection[lineName][station.name][direction].push({
                             minutes: minutes,
                             seconds: seconds,
                             date: Date.parse(train.expectedArrivalTime),
@@ -232,7 +313,7 @@ async function main() {
 
     // Insert into DOM
     Object.keys(arrivalsByLineAndDirection).forEach((lineName) => {
-        const lineDiv = document.createElement("div");
+        /*const lineDiv = document.createElement("div");
         const lineTitle = document.createElement("h2");
         lineTitle.textContent = `Ligne ${lineName}`;
         lineDiv.appendChild(lineTitle);
@@ -262,6 +343,47 @@ async function main() {
             lineDiv.appendChild(directionDiv);
         });
 
+        container.appendChild(lineDiv);*/
+
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "line";
+        const lineTitle = document.createElement("h2");
+        lineTitle.textContent = `Ligne ${lineName}`;
+        lineDiv.appendChild(lineTitle);
+
+        const stations = arrivalsByLineAndDirection[lineName];
+        Object.keys(stations).forEach((stationName) => {
+            const stationDiv = document.createElement("div");
+            stationDiv.className = "station";
+            const stationTitle = document.createElement("h3");
+            stationTitle.textContent = `Station : ${stationName}`;
+            stationDiv.appendChild(stationTitle);
+            const directions = stations[stationName];
+
+            Object.keys(directions).forEach((direction) => {
+                const directionDiv = document.createElement("div");
+                directionDiv.className = "direction";
+                const directionTitle = document.createElement("h4");
+                directionTitle.textContent = `Direction : ${direction}`;
+                directionDiv.appendChild(directionTitle);
+                directions[direction].forEach((timeObj) => {
+                    const timeP = document.createElement("p");
+                    if (timeObj.realtime) {
+                        if (timeObj.minutes < 0) {
+                            timeP.textContent = "À l'approche";
+                        } else {
+                            timeP.textContent = `${timeObj.minutes}m ${timeObj.seconds}s`;
+                        }
+                    } else {
+                        timeP.textContent = `À ${new Date(timeObj.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (horaire théorique)`;
+                    }
+                    directionDiv.appendChild(timeP);
+                });
+                stationDiv.appendChild(directionDiv);
+            });
+
+            lineDiv.appendChild(stationDiv);
+        });
         container.appendChild(lineDiv);
     });
 }
