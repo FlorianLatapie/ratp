@@ -45,6 +45,7 @@ async function getLocation() {
             },
             {
                 enableHighAccuracy: false, // should be faster on Android
+                timeout: 1000, // 1 second timeout
             }
         );
     });
