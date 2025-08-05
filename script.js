@@ -50,6 +50,9 @@ async function getLocation() {
 
 
 async function getStationsFromLocation() {
+    let loadinfo = document.getElementById("loadinfo");
+    loadinfo.innerHTML = `Récupération de la position ...`;
+
     const location = await getLocation();
     const lat = location.coords.latitude;
     const lon = location.coords.longitude;
@@ -67,7 +70,6 @@ async function getStationsFromLocation() {
     const yMin = lat - modifyY;
     const yMax = lat + modifyY;
 
-    let loadinfo = document.getElementById("loadinfo");
     loadinfo.innerHTML = `Localisation récupérée, recherche des stations à proximité ...<br/>Latitude : ${lat}, Longitude : ${lon}`;
 
     const BBOX = `BBOX(geometry,${xMin},${yMin},${xMax},${yMax},'EPSG:4326')`;
