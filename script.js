@@ -1,5 +1,4 @@
 let API_KEY = "";
-let userCoordinates = [0, 0]; // to be set later
 
 // setup shit
 
@@ -54,7 +53,6 @@ async function getStationsFromLocation() {
     const location = await getLocation();
     const lat = location.coords.latitude;
     const lon = location.coords.longitude;
-    userCoordinates = [lon, lat]; // store user coordinates for later use
 
     const requestOptions = {
         headers: {
@@ -214,10 +212,14 @@ async function getNextTrains(lineId, stationId) {
 async function main() {
     // setup
     API_KEY = await getApikey();
+    let loadinfo = document.getElementById("loadinfo");
+    loadinfo.innerHTML = "Clé d'API chargée, récupération de la position et des stations proches";
 
     let userData = await getStationsFromLocation();
+    loadinfo.innerHTML = "Utilisateur localisé, stations récupérées";
 
     // Display disruptions
+    /*
     document.getElementById("disruptions").innerHTML = "";
 
     let linesWithoutDisruptions = [];
@@ -256,10 +258,12 @@ async function main() {
     /* 
         if (linesWithoutDisruptions.length > 0) {
             document.getElementById("disruptions").innerHTML += `<h2>Pas de perturbations pour le moment pour les lignes : ${linesWithoutDisruptions.map(line => line.shortName).join(", ")}</h2>`;
-        } */
+        } 
 
     // Display next arrivals
 
+    loadinfo.innerHTML = "Perturbations créées, prochaines arrivées en cours de chargement ...";
+*/
 
     const container = document.getElementById("nextArrivalsContainer");
     container.innerHTML = "";
@@ -300,6 +304,8 @@ async function main() {
             );
         })
     );
+
+    loadinfo.innerHTML = "Prochaines arrivées chargées";
 
     // Insert into DOM
     Object.keys(arrivalsByLineAndDirection).forEach((lineName) => {
@@ -344,6 +350,8 @@ async function main() {
         });
         container.appendChild(lineDiv);
     });
+
+    loadinfo.innerHTML = `Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' , second: '2-digit' })}`;
 }
 
 main()
