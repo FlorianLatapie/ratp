@@ -3,7 +3,6 @@ let API_KEY = "";
 // setup shit
 
 async function getApikey() {
-    // const response = await fetch("https://me-deplacer.iledefrance-mobilites.fr/api/env");
     const response = await fetch("https://corsproxy.io/?url=https://me-deplacer.iledefrance-mobilites.fr/api/env");
 
     const data = await response.json();
@@ -123,7 +122,6 @@ async function getStations(lineId) {
         }
     };
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops`, requestOptions);
-    // const response = await fetch(`https://corsproxy.io/?url=https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops`, requestOptions);
     const data = await response.json();
     return data.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -160,7 +158,6 @@ async function getNextTrains(lineId, stationId) {
         }
     };
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops/${stationId}/realTime`, requestOptions);
-    // const response = await fetch(`https://corsproxy.io/?url=https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops/${stationId}/realTime`, requestOptions);
     const data = await response.json();
     let allDepartures = data.nextDepartures.data;
 
