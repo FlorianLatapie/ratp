@@ -24,33 +24,6 @@ async function getLocation() {
     });
 }
 
-function haversineDistance(aLat, aLng, bLat, bLng) {
-    // https://github.com/dcousens/haversine-distance/blob/main/index.js
-    const atan2 = Math.atan2
-    const cos = Math.cos
-    const sin = Math.sin
-    const sqrt = Math.sqrt
-    const PI = Math.PI
-
-    // equatorial mean radius of Earth (in meters)
-    const R = 6378137
-
-    function squared(x) { return x * x }
-    function hav(x) {
-        return squared(sin(x / 2))
-    }
-
-    function toRad(x) { return x * PI / 180.0 }
-    aLat = toRad(aLat)
-    aLng = toRad(aLng)
-    bLat = toRad(bLat)
-    bLng = toRad(bLng)
-
-    // hav(theta) = hav(bLat - aLat) + cos(aLat) * cos(bLat) * hav(bLon - aLon)
-    const ht = hav(bLat - aLat) + cos(aLat) * cos(bLat) * hav(bLng - aLng)
-    return 2 * R * atan2(sqrt(ht), sqrt(1 - ht))
-}
-
 
 async function getStationsFromLocation() {
     const location = await getLocation();
@@ -62,16 +35,15 @@ async function getStationsFromLocation() {
     const requestOptions = {
         headers: {
             "Apikey": API_KEY,
-            //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
         }
     };
 
     const modifyX = 0.0055;
     const modifyY = 0.004;
-    const xMin = lon - modifyX; // 2...
-    const xMax = lon + modifyX; // 2...
-    const yMin = lat - modifyY; // 48.8...
-    const yMax = lat + modifyY; // 48.8...
+    const xMin = lon - modifyX;
+    const xMax = lon + modifyX;
+    const yMin = lat - modifyY;
+    const yMax = lat + modifyY;
 
     const BBOX = `BBOX(geometry,${xMin},${yMin},${xMax},${yMax},'EPSG:4326')`;
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${BBOX}`, requestOptions);
@@ -141,7 +113,6 @@ async function getLines() {
         headers: {
             "Apikey": API_KEY,
             "Host": "api-iv.iledefrance-mobilites.fr",
-            //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
         }
     };
     const response = await fetch("https://api-iv.iledefrance-mobilites.fr/lines?mode=Metro%3BTramway%3BRapidTransit%3BregionalRail%3BLocalTrain%3BRailShuttle%3BFunicular", requestOptions);
@@ -154,7 +125,6 @@ async function getStations(lineId) {
         headers: {
             "Apikey": API_KEY,
             "Host": "api-iv.iledefrance-mobilites.fr",
-            //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
         }
     };
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops`, requestOptions);
@@ -168,7 +138,6 @@ async function getDisruptions() {
         headers: {
             "Apikey": API_KEY,
             "Host": "api-iv.iledefrance-mobilites.fr",
-            //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
         }
     };
 
@@ -193,7 +162,6 @@ async function getNextTrains(lineId, stationId) {
         headers: {
             "Apikey": API_KEY,
             "Host": "api-iv.iledefrance-mobilites.fr",
-            //"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
         }
     };
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops/${stationId}/realTime`, requestOptions);
@@ -313,38 +281,6 @@ async function main() {
 
     // Insert into DOM
     Object.keys(arrivalsByLineAndDirection).forEach((lineName) => {
-        /*const lineDiv = document.createElement("div");
-        const lineTitle = document.createElement("h2");
-        lineTitle.textContent = `Ligne ${lineName}`;
-        lineDiv.appendChild(lineTitle);
-
-        const directions = arrivalsByLineAndDirection[lineName];
-        Object.keys(directions).forEach((direction) => {
-            const directionDiv = document.createElement("div");
-            const directionTitle = document.createElement("h3");
-            directionTitle.textContent = `Direction : ${direction}`;
-            directionDiv.appendChild(directionTitle);
-
-            directions[direction].forEach((timeObj) => {
-                const timeP = document.createElement("p");
-                if (timeObj.realtime) {
-                    if (timeObj.minutes < 0) {
-                        timeP.textContent = "À l'approche";
-                    } else {
-                        timeP.textContent = `${timeObj.minutes}m ${timeObj.seconds}s`;
-                    }
-                } else {
-                    timeP.textContent = `À ${new Date(timeObj.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (horaire théorique)`;
-                }
-
-                directionDiv.appendChild(timeP);
-            });
-
-            lineDiv.appendChild(directionDiv);
-        });
-
-        container.appendChild(lineDiv);*/
-
         const lineDiv = document.createElement("div");
         lineDiv.className = "line";
         const lineTitle = document.createElement("h2");
