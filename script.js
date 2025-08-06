@@ -163,6 +163,7 @@ async function getLines() {
     return data;
 }
 
+/*
 async function getStations(lineId) {
     const requestOptions = {
         headers: {
@@ -173,7 +174,7 @@ async function getStations(lineId) {
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops`, requestOptions);
     const data = await response.json();
     return data.sort((a, b) => a.name.localeCompare(b.name));
-}
+}*/
 
 async function getDisruptions(lines) {
     const requestOptions = {
