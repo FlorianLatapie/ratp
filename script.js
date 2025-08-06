@@ -45,7 +45,6 @@ async function getLocation() {
             },
             {
                 enableHighAccuracy: false, // should be faster on Android
-                maximumAge: 30_000 // 30 seconds cache
             }
         );
     });
@@ -72,19 +71,27 @@ function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 async function getStationsAndLinesFromLocation(lat, lon) {
-    const modifyX = 0.0055;
-    const modifyY = 0.004;
-    const bbox = `BBOX(geometry,${lon - modifyX},${lat - modifyY},${lon + modifyX},${lat + modifyY},'EPSG:4326')`;
+    let modifyX = 0.0055;
+    let modifyY = 0.004;
+    let data, linesMap;
+    let iterations = 0;
+    do {
+        modifyX *= 1.5;
+        modifyY *= 1.5;
+        const bbox = `BBOX(geometry,${lon - modifyX},${lat - modifyY},${lon + modifyX},${lat + modifyY},'EPSG:4326')`;
 
-    const url = `https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${bbox}`;
+        const url = `https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${bbox}`;
 
-    const [stationsResponse, allLines] = await Promise.all([
-        fetch(url, { headers: { "Apikey": API_KEY } }),
-        getLines()
-    ]);
+        const [stationsResponse, allLines] = await Promise.all([
+            fetch(url, { headers: { "Apikey": API_KEY } }),
+            getLines()
+        ]);
 
-    const data = await stationsResponse.json();
-    const linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
+        data = await stationsResponse.json();
+        linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
+        console.log(`iterations `, iterations);
+        iterations++;
+    } while (data.features.length === 0);
     const nearbyStationsMap = new Map();
     const nearbyLinesMap = new Map();
 
@@ -237,7 +244,12 @@ async function getNextTrains(lineId, stationId) {
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops/${stationId}/realTime`, requestOptions);
     const data = await response.json();
     let allDepartures = data.nextDepartures.data;
-
+    allDepartures = allDepartures.map(departure => {
+        return {
+            ...departure,
+            realtime: true
+        };
+    });
 
     // if (data.nextDepartures.statusCode != "200" && data.nextDepartures.errorMessage == "NO_REALTIME_SCHEDULES_FOUND") {
     if (allDepartures.length < 5) {
@@ -249,14 +261,16 @@ async function getNextTrains(lineId, stationId) {
             direction.dateTime.forEach(info => {
                 allDepartures.push({
                     expectedArrivalTime: YYYYMMDDTHHMMSStoDate(info.dateTime).toISOString(),
-                    lineDirection: direction.route.direction.name
+                    lineDirection: direction.route.direction.name.split("(")[0].trim(),
+                    realtime: false // set realtime to false for fallback data
                 });
             });
         });
-        return { nextTrainsAtMyStation: allDepartures, realtime: false };
+        return { nextTrainsAtMyStation: allDepartures };
     }
 
-    return { nextTrainsAtMyStation: allDepartures, realtime: true };
+
+    return { nextTrainsAtMyStation: allDepartures };
 }
 
 function populateDisruptions(disruptions) {
@@ -326,15 +340,17 @@ function populateStations(stations) {
                     directionsMap[direction].forEach(train => {
                         const trainItem = document.createElement("li");
                         trainItem.className = "train-item";
-
-                        const timeUntilNextTrain = Date.parse(train.expectedArrivalTime) - Date.now();
+                        
+                        const parsedTime = new Date(train.expectedArrivalTime);
+                        const timeUntilNextTrain = parsedTime - Date.now();
                         const minutes = Math.floor(timeUntilNextTrain / 60000);
                         const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
                         if (minutes < 0) {
                             trainItem.textContent = "À l'approche";
                         } else {
-                            if (realtime) {
-                                trainItem.textContent = `${minutes} min ${seconds} sec`;
+                            // if (realtime) {
+                            if (train.realtime) {
+                                trainItem.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s (à ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
                             } else {
                                 // trainItem.textContent = train.expectedArrivalTime
                                 trainItem.textContent = `${new Date(train.expectedArrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (théorique)`;
@@ -362,6 +378,7 @@ async function main() {
 
     let { coords: { latitude: lat, longitude: lon } } = await getLocation();
     // const {lat, lon}  = {lat:48.8677097, lon:2.3639890};
+    // const { lat, lon } = { lat: 48.894851, lon: 2.293794 }; // Paris coordinates for testing
     loadinfo.innerHTML = "Position récupérée, récupération des stations proches...";
 
     let { stations, lines } = await getStationsAndLinesFromLocation(lat, lon);
