@@ -367,8 +367,8 @@ async function main() {
     let loadinfo = document.getElementById("loadinfo");
     loadinfo.innerHTML = "Clé d'API chargée, récupération de la position...";
 
-    //let { coords: { latitude: lat, longitude: lon } } = await getLocation();
-    const {lat, lon} = { lat: 48.861670, lon: 2.347886 };
+    let { coords: { latitude: lat, longitude: lon } } = await getLocation();
+    //const {lat, lon} = { lat: 48.861670, lon: 2.347886 };
 
     loadinfo.innerHTML = "Position récupérée, récupération des stations proches...";
 
