@@ -80,7 +80,7 @@ async function getStationsAndLinesFromLocation(lat, lon) {
         modifyY *= 1.5;
         const bbox = `BBOX(geometry,${lon - modifyX},${lat - modifyY},${lon + modifyX},${lat + modifyY},'EPSG:4326')`;
 
-        const url = `https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=commercialMode IN ('commercial_mode:Metro','commercial_mode:Tramway','commercial_mode:RailShuttle') AND ${bbox}`;
+        const url = `https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=${bbox}`;
 
         const [stationsResponse, allLines] = await Promise.all([
             fetch(url, { headers: { "Apikey": API_KEY } }),
@@ -156,20 +156,6 @@ async function getLines() {
     return await response.json();
 }
 
-/*
-async function getStations(lineId) {
-    const requestOptions = {
-        headers: {
-            "Apikey": API_KEY,
-            "Host": "api-iv.iledefrance-mobilites.fr",
-        }
-    };
-    const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops`, requestOptions);
-    const data = await response.json();
-    return data.sort((a, b) => a.name.localeCompare(b.name));
-}
-*/
-
 async function getDisruptions(lines) {
     const response = await fetch("https://api-iv.iledefrance-mobilites.fr/disruptions/v2", {
         headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
@@ -184,6 +170,10 @@ async function getDisruptions(lines) {
             output.linesOK.push({ line: line });
             return;
         }
+        if (linesImpacted.mode == "RapidTransit"){
+            return; // ignore RER lines messages
+        }
+
         const disruptionsIds = linesImpacted.impactedObjects.flatMap(did => did.disruptionIds);
         const disruptionMessages = data.disruptions.filter(disruption => disruptionsIds.includes(disruption.id));
 
@@ -201,6 +191,8 @@ async function getDisruptions(lines) {
                 if (message.cause === "INFORMATION") {
                     return false; // ignore information messages
                 }
+
+            
                 return true;
             });
         });
@@ -289,7 +281,7 @@ function populateStations(stations) {
             lineItem.appendChild(directionsContainer);
 
             // fetch next arrivals for this line at this station
-            getNextTrains(line.externalCode, station.id).then(({ nextTrainsAtMyStation, realtime }) => {
+            getNextTrains(line.externalCode, station.id).then(({ nextTrainsAtMyStation }) => {
                 const directionsMap = {};
 
                 // Grouper les trains par terminus (direction)
@@ -375,7 +367,8 @@ async function main() {
     let loadinfo = document.getElementById("loadinfo");
     loadinfo.innerHTML = "Clé d'API chargée, récupération de la position...";
 
-    let { coords: { latitude: lat, longitude: lon } } = await getLocation();
+    //let { coords: { latitude: lat, longitude: lon } } = await getLocation();
+    const {lat, lon} = { lat: 48.861670, lon: 2.347886 };
 
     loadinfo.innerHTML = "Position récupérée, récupération des stations proches...";
 
