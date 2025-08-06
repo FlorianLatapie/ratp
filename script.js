@@ -89,7 +89,6 @@ async function getStationsAndLinesFromLocation(lat, lon) {
 
         data = await stationsResponse.json();
         linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
-        console.log(`iterations `, iterations);
         iterations++;
     } while (data.features.length === 0);
     const nearbyStationsMap = new Map();
@@ -125,7 +124,7 @@ async function getStationsAndLinesFromLocation(lat, lon) {
         }
     });
 
-    const output = {
+    return {
         stations: Array.from(nearbyStationsMap.values()).sort((a, b) => {
             const distA = getDistance(lat, lon, a.coordinates[1], a.coordinates[0]);
             const distB = getDistance(lat, lon, b.coordinates[1], b.coordinates[0]);
@@ -133,7 +132,6 @@ async function getStationsAndLinesFromLocation(lat, lon) {
         }),
         lines: Array.from(nearbyLinesMap.values()).sort((a, b) => a.externalCode.localeCompare(b.externalCode))
     };
-    return output;
 }
 
 // tooling
@@ -152,15 +150,10 @@ function YYYYMMDDTHHMMSStoDate(dateString) {
 // real time data
 
 async function getLines() {
-    const requestOptions = {
-        headers: {
-            "Apikey": API_KEY,
-            "Host": "api-iv.iledefrance-mobilites.fr",
-        }
-    };
-    const response = await fetch("https://api-iv.iledefrance-mobilites.fr/lines?mode=Metro%3BTramway%3BRapidTransit%3BregionalRail%3BLocalTrain%3BRailShuttle%3BFunicular", requestOptions);
-    const data = await response.json();
-    return data;
+    const response = await fetch("https://api-iv.iledefrance-mobilites.fr/lines?mode=Metro%3BTramway%3BRapidTransit%3BregionalRail%3BLocalTrain%3BRailShuttle%3BFunicular", {
+        headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
+    });
+    return await response.json();
 }
 
 /*
@@ -174,23 +167,16 @@ async function getStations(lineId) {
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops`, requestOptions);
     const data = await response.json();
     return data.sort((a, b) => a.name.localeCompare(b.name));
-}*/
+}
+*/
 
 async function getDisruptions(lines) {
-    const requestOptions = {
-        headers: {
-            "Apikey": API_KEY,
-            "Host": "api-iv.iledefrance-mobilites.fr",
-        }
-    };
-
-    const response = await fetch("https://api-iv.iledefrance-mobilites.fr/disruptions/v2", requestOptions);
+    const response = await fetch("https://api-iv.iledefrance-mobilites.fr/disruptions/v2", {
+        headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
+    });
     const data = await response.json();
 
-    let output = {
-        linesOK: [],
-        disruptedLines: []
-    }
+    let output = { linesOK: [], disruptedLines: [] };
 
     lines.forEach(line => {
         const linesImpacted = data.lines.find(disruption => disruption.id == line.externalCode);
@@ -208,7 +194,7 @@ async function getDisruptions(lines) {
             return message.applicationPeriods.some(period => {
                 const begin = YYYYMMDDTHHMMSStoDate(period.begin);
                 if (begin > now) {
-                    return false; // not started yet
+                    return false;
                 }
 
                 // available disruption.cause values : "INFORMATION", "TRAVAUX", "PERTURBATION"
@@ -216,7 +202,6 @@ async function getDisruptions(lines) {
                     return false; // ignore information messages
                 }
                 return true;
-
             });
         });
 
@@ -233,28 +218,16 @@ async function getDisruptions(lines) {
     return output;
 }
 
-
-// todo set realtime info in each train object not in the function return
 async function getNextTrains(lineId, stationId) {
     const requestOptions = {
-        headers: {
-            "Apikey": API_KEY,
-            "Host": "api-iv.iledefrance-mobilites.fr",
-        }
+        headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
     };
     const response = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/v2/${lineId}/stops/${stationId}/realTime`, requestOptions);
     const data = await response.json();
-    let allDepartures = data.nextDepartures.data;
-    allDepartures = allDepartures.map(departure => {
-        return {
-            ...departure,
-            realtime: true
-        };
-    });
+    let allDepartures = data.nextDepartures.data.map(dep => ({ ...dep, realtime: true }));
 
-    // if (data.nextDepartures.statusCode != "200" && data.nextDepartures.errorMessage == "NO_REALTIME_SCHEDULES_FOUND") {
     if (allDepartures.length < 5) {
-        const numberOfItems = 4; // default value
+        const numberOfItems = 4;
         const fallbackResponse = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/${lineId}/stop_areas/${stationId}/schedules/v2?items_per_schedule=${numberOfItems}&from_datetime=${new Date().toISOString()}`, requestOptions);
         const fallbackData = await fallbackResponse.json();
 
@@ -263,14 +236,11 @@ async function getNextTrains(lineId, stationId) {
                 allDepartures.push({
                     expectedArrivalTime: YYYYMMDDTHHMMSStoDate(info.dateTime).toISOString(),
                     lineDirection: direction.route.direction.name.split("(")[0].trim(),
-                    realtime: false // set realtime to false for fallback data
+                    realtime: false
                 });
             });
         });
-        return { nextTrainsAtMyStation: allDepartures };
     }
-
-
     return { nextTrainsAtMyStation: allDepartures };
 }
 
@@ -282,11 +252,15 @@ function populateDisruptions(disruptions) {
     }*/
     disruptions.disruptedLines.forEach(disruptedLine => {
         const line = disruptedLine.line;
-        disruptionsContainer.innerHTML += `<h3 class="ligne-${line.shortName}">Ligne ${line.shortName}</h3>`;
+        disruptionsContainer.innerHTML += `<h4 class="ligne-${line.shortName}">Ligne ${line.shortName}</h4>`;
         disruptedLine.messages.forEach(message => {
             disruptionsContainer.innerHTML += `<p>${message.message}</p>`;
         });
     });
+
+    if (disruptions.disruptedLines.length === 0) {
+        disruptionsContainer.innerHTML =""
+    }
 }
 
 function populateStations(stations) {
@@ -341,27 +315,27 @@ function populateStations(stations) {
                     directionsMap[direction].forEach(train => {
                         const trainItem = document.createElement("li");
                         trainItem.className = "train-item";
-                        
+                        trainItem.dataset.arrivalTime = new Date(train.expectedArrivalTime).getTime();
+
                         const parsedTime = new Date(train.expectedArrivalTime);
                         const timeUntilNextTrain = parsedTime - Date.now();
                         const minutes = Math.floor(timeUntilNextTrain / 60000);
                         const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
+
                         if (minutes < 0) {
-                            trainItem.textContent = "À l'approche";
+                            trainItem.textContent = `En gare (depuis ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                            trainItem.classList.add("arrived");
                         } else {
-                            // if (realtime) {
                             if (train.realtime) {
                                 trainItem.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s (à ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
                             } else {
-                                // trainItem.textContent = train.expectedArrivalTime
-                                trainItem.textContent = `${new Date(train.expectedArrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (théorique)`;
+                                trainItem.textContent = `${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (théorique)`;
                             }
                         }
                         trainsList.appendChild(trainItem);
                     });
                     directionDiv.appendChild(trainsList);
                     directionsContainer.appendChild(directionDiv);
-
                 });
             });
         });
@@ -370,6 +344,30 @@ function populateStations(stations) {
     });
 }
 
+function startLiveCountdownUpdater() {
+    setInterval(() => {
+        const now = Date.now();
+        const trainItems = document.querySelectorAll(".train-item");
+
+        trainItems.forEach(trainItem => {
+            const arrivalTime = parseInt(trainItem.dataset.arrivalTime);
+            const timeUntilArrival = arrivalTime - now;
+            const minutes = Math.floor(timeUntilArrival / 60000);
+            const seconds = Math.floor((timeUntilArrival % 60000) / 1000);
+
+            if (trainItem.textContent.includes("(théorique)")) return;
+
+            if (timeUntilArrival < -60_000) {
+                trainItem.remove();
+            } else if (timeUntilArrival < 0) {
+                trainItem.textContent = `En gare (depuis ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                trainItem.classList.add("arrived");
+            } else {
+                trainItem.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s (à ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+            }
+        });
+    }, 1000);
+}
 
 async function main() {
     // setup
@@ -378,8 +376,7 @@ async function main() {
     loadinfo.innerHTML = "Clé d'API chargée, récupération de la position...";
 
     let { coords: { latitude: lat, longitude: lon } } = await getLocation();
-    // const {lat, lon}  = {lat:48.8677097, lon:2.3639890};
-    // const { lat, lon } = { lat: 48.894851, lon: 2.293794 }; // Paris coordinates for testing
+
     loadinfo.innerHTML = "Position récupérée, récupération des stations proches...";
 
     let { stations, lines } = await getStationsAndLinesFromLocation(lat, lon);
@@ -397,10 +394,10 @@ async function main() {
 
     populateStations(stations);
 
-    loadinfo.innerHTML = `Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    loadinfo.innerHTML = `Dernier rafraîchissement :<br/>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    document.querySelector("footer").style.display = "block";
 
-    const footer = document.querySelector("footer");
-    footer.style.display = "block";
+    startLiveCountdownUpdater();
 }
 
-main()
+main();
