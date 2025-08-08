@@ -463,8 +463,8 @@ async function main() {
     // setup
     let loadinfo = document.getElementById("loadinfo");
 
-    loadinfo.innerHTML = "Récupération de la clé API...";
-    API_KEY = await getApikey();
+    // loadinfo.innerHTML = "Récupération de la clé API...";
+    API_KEY = "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx"; // await getApikey();
 
     loadinfo.innerHTML = "Récupération de la position...";
 
