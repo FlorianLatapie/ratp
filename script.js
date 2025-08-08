@@ -13,16 +13,12 @@ async function getApikey() {
     return output;
 }
 
-async function getLocation() {
+function getLocation() {
     return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-            alert("Geolocation is not supported by this browser.");
-            return reject(new Error("Geolocation is not supported by this browser."));
-        }
-
-        navigator.geolocation.getCurrentPosition(
+        const watchId = navigator.geolocation.watchPosition(
             (position) => {
-                resolve(position);
+                navigator.geolocation.clearWatch(watchId);
+                resolve(position.coords);
             },
             (error) => {
                 switch (error.code) {
@@ -35,7 +31,6 @@ async function getLocation() {
                     case error.TIMEOUT:
                         alert("The request to get your location timed out.");
                         break;
-                    case error.UNKNOWN_ERROR:
                     default:
                         alert("An unknown error occurred while trying to fetch your location.");
                         break;
@@ -170,7 +165,7 @@ async function getDisruptions(lines) {
             output.linesOK.push({ line: line });
             return;
         }
-        if (linesImpacted.mode == "RapidTransit"){
+        if (linesImpacted.mode == "RapidTransit") {
             return; // ignore RER lines messages
         }
 
@@ -192,7 +187,7 @@ async function getDisruptions(lines) {
                     return false; // ignore information messages
                 }
 
-            
+
                 return true;
             });
         });
@@ -251,7 +246,7 @@ function populateDisruptions(disruptions) {
     });
 
     if (disruptions.disruptedLines.length === 0) {
-        disruptionsContainer.innerHTML =""
+        disruptionsContainer.innerHTML = ""
     }
 }
 
@@ -309,21 +304,31 @@ function populateStations(stations) {
                         trainItem.className = "train-item";
                         trainItem.dataset.arrivalTime = new Date(train.expectedArrivalTime).getTime();
 
+                        const remainingTimeText = document.createElement("span");
+                        const trainTimeText = document.createElement("span");
+
+
                         const parsedTime = new Date(train.expectedArrivalTime);
                         const timeUntilNextTrain = parsedTime - Date.now();
                         const minutes = Math.floor(timeUntilNextTrain / 60000);
                         const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
 
                         if (minutes < 0) {
-                            trainItem.textContent = `En station (depuis ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                            remainingTimeText.textContent = `En station`;
+                            trainTimeText.textContent = `(depuis ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
                             trainItem.classList.add("arrived");
                         } else {
                             if (train.realtime) {
-                                trainItem.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s (à ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                                remainingTimeText.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+                                trainTimeText.textContent = `(à ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
                             } else {
-                                trainItem.textContent = `${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (théorique)`;
+                                remainingTimeText.textContent = `${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                                trainTimeText.textContent = " (théorique)";
+                                trainItem.classList.add("theoretical");
                             }
                         }
+                        trainItem.appendChild(remainingTimeText);
+                        trainItem.appendChild(trainTimeText);
                         trainsList.appendChild(trainItem);
                     });
                     directionDiv.appendChild(trainsList);
@@ -347,15 +352,20 @@ function startLiveCountdownUpdater() {
             const minutes = Math.floor(timeUntilArrival / 60000);
             const seconds = Math.floor((timeUntilArrival % 60000) / 1000);
 
+            const remainingTimeText = trainItem.querySelector("span:first-child");
+            const trainTimeText = trainItem.querySelector("span:last-child");
+
             if (trainItem.textContent.includes("(théorique)")) return;
 
             if (timeUntilArrival < -60_000) {
                 trainItem.remove();
             } else if (timeUntilArrival < 0) {
-                trainItem.textContent = `En station (depuis ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                remainingTimeText.textContent = `En station`;
+                trainTimeText.textContent = `depuis ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
                 trainItem.classList.add("arrived");
             } else {
-                trainItem.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s (à ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                remainingTimeText.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+                trainTimeText.textContent = `à ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
             }
         });
     }, 1000);
@@ -363,32 +373,37 @@ function startLiveCountdownUpdater() {
 
 async function main() {
     // setup
-    API_KEY = await getApikey();
     let loadinfo = document.getElementById("loadinfo");
-    loadinfo.innerHTML = "Clé d'API chargée, récupération de la position...";
 
-    let { coords: { latitude: lat, longitude: lon } } = await getLocation();
+    loadinfo.innerHTML = "Récupération de la clé API...";
+    API_KEY = await getApikey();
+
+    loadinfo.innerHTML = "Récupération de la position...";
+
+    /*let location = await getLocation();
+    const lat = location.latitude;
+    const lon = location.longitude;*/
+    let { latitude: lat, longitude: lon  } = await getLocation();
     //const {lat, lon} = { lat: 48.861670, lon: 2.347886 };
 
-    loadinfo.innerHTML = "Position récupérée, récupération des stations proches...";
+    loadinfo.innerHTML = "Récupération des stations proches...";
 
     let { stations, lines } = await getStationsAndLinesFromLocation(lat, lon);
 
-    loadinfo.innerHTML = "Stations proches récupérées, récupération des perturbations...";
+    loadinfo.innerHTML = "Récupération des perturbations...";
 
     // Display stations
     const disruptions = await getDisruptions(lines);
 
-    loadinfo.innerHTML = "Perturbations récupérées, affichage des perturbations...";
+    loadinfo.innerHTML = "Récupération des perturbations...";
 
     populateDisruptions(disruptions);
 
-    loadinfo.innerHTML = "Perturbations affichées, affichage des stations proches...";
+    loadinfo.innerHTML = "Affichage des stations proches...";
 
     populateStations(stations);
 
     loadinfo.innerHTML = `Dernier rafraîchissement :<br/>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-    document.querySelector("footer").style.display = "block";
 
     startLiveCountdownUpdater();
 }

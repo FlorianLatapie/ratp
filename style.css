@@ -45,6 +45,10 @@ p {
 li {
     font-size: 1.5em;
     padding-left: 5px;
+
+    /* flexbox */
+    display: flex;
+    justify-content: space-around;
 }
 
 .station-name {
