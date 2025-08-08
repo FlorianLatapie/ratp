@@ -166,6 +166,13 @@ async function getStationsAndLinesFromLocation(lat, lon) {
         data = await stationsResponse.json();
         linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
         iterations++;
+        if (iterations > 5) {
+            // launch fallback map if no stations found after 5 iterations
+            console.warn("No stations found within the specified area. Launching fallback map.");
+            return launchFallbackMap().then(({ coords: { latitude: lat, longitude: lon } }) => {
+                return getStationsAndLinesFromLocation(lat, lon);
+            });
+        }
     } while (data.features.length === 0);
     const nearbyStationsMap = new Map();
     const nearbyLinesMap = new Map();
