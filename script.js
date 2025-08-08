@@ -13,10 +13,86 @@ async function getApikey() {
     return output;
 }
 
+function loadLeaflet() {
+    return new Promise((resolve, reject) => {
+        // If Leaflet already loaded, skip
+        if (window.L) return resolve();
+
+        // Load CSS
+        const leafletCSS = document.createElement('link');
+        leafletCSS.rel = 'stylesheet';
+        leafletCSS.href = 'https://unpkg.com/leaflet/dist/leaflet.css';
+        document.head.appendChild(leafletCSS);
+
+        // Load JS
+        const leafletScript = document.createElement('script');
+        leafletScript.src = 'https://unpkg.com/leaflet/dist/leaflet.js';
+        leafletScript.onload = () => resolve();
+        leafletScript.onerror = reject;
+        document.head.appendChild(leafletScript);
+    });
+}
+
+async function launchFallbackMap() {
+    await loadLeaflet();
+
+    let chosenCoords = { lat: 48.8566, lng: 2.3522 }; // default coords
+
+    const fallbackMapContainer = document.createElement('div');
+    fallbackMapContainer.id = "fallbackMapContainer";
+
+    const titleItem = document.createElement('h2');
+    titleItem.textContent = "Choisissez une position";
+    fallbackMapContainer.appendChild(titleItem);
+
+    const mapDiv = document.createElement('div');
+    mapDiv.id = "map";
+    mapDiv.style.height = "400px";
+    fallbackMapContainer.appendChild(mapDiv);
+
+    const acceptButton = document.createElement('button');
+    acceptButton.id = "acceptMapButton";
+    acceptButton.textContent = "Valider";
+    fallbackMapContainer.appendChild(acceptButton);
+
+    document.body.appendChild(fallbackMapContainer);
+
+    const map = L.map('map').setView([chosenCoords.lat, chosenCoords.lng], 12);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd'
+    }).addTo(map);
+
+    let marker = L.marker([chosenCoords.lat, chosenCoords.lng]).addTo(map);
+
+    map.on('click', function (e) {
+        chosenCoords = {
+            lat: parseFloat(e.latlng.lat.toFixed(6)),
+            lng: parseFloat(e.latlng.lng.toFixed(6))
+        };
+
+        if (marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng).addTo(map);
+        }
+    });
+
+    // Return a promise that resolves when user clicks "Accepter"
+    return new Promise((resolve) => {
+        acceptButton.onclick = function () {
+            document.body.removeChild(fallbackMapContainer);
+            resolve({ coords: { latitude: chosenCoords.lat, longitude: chosenCoords.lng } });
+        };
+    });
+}
+
+
 async function getLocation() {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by this browser.");
+            console.warn("Geolocation is not supported by this browser.");
             return reject(new Error("Geolocation is not supported by this browser."));
         }
 
@@ -27,21 +103,21 @@ async function getLocation() {
             (error) => {
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        alert("You have blocked location access. Please enable it in your browser settings.");
+                        console.warn("You have blocked location access. Please enable it in your browser settings.");
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        alert("Location information is unavailable.");
+                        console.warn("Location information is unavailable.");
                         break;
                     case error.TIMEOUT:
-                        alert("The request to get your location timed out.");
+                        console.warn("The request to get your location timed out.");
                         break;
                     case error.UNKNOWN_ERROR:
                     default:
-                        alert("An unknown error occurred while trying to fetch your location.");
+                        console.warn("An unknown error occurred while trying to fetch your location.");
                         break;
                 }
 
-                reject(error);
+                resolve(launchFallbackMap()); // Fallback to map selection
             },
             {
                 enableHighAccuracy: false, // should be faster on Android
