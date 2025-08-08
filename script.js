@@ -315,7 +315,7 @@ function populateStations(stations) {
                         const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
 
                         if (minutes < 0) {
-                            trainItem.textContent = `En gare (depuis ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                            trainItem.textContent = `En station (depuis ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
                             trainItem.classList.add("arrived");
                         } else {
                             if (train.realtime) {
@@ -352,7 +352,7 @@ function startLiveCountdownUpdater() {
             if (timeUntilArrival < -60_000) {
                 trainItem.remove();
             } else if (timeUntilArrival < 0) {
-                trainItem.textContent = `En gare (depuis ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
+                trainItem.textContent = `En station (depuis ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
                 trainItem.classList.add("arrived");
             } else {
                 trainItem.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s (à ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`;
