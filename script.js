@@ -13,12 +13,16 @@ async function getApikey() {
     return output;
 }
 
-function getLocation() {
+async function getLocation() {
     return new Promise((resolve, reject) => {
-        const watchId = navigator.geolocation.watchPosition(
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by this browser.");
+            return reject(new Error("Geolocation is not supported by this browser."));
+        }
+
+        navigator.geolocation.getCurrentPosition(
             (position) => {
-                navigator.geolocation.clearWatch(watchId);
-                resolve(position.coords);
+                resolve(position);
             },
             (error) => {
                 switch (error.code) {
@@ -31,6 +35,7 @@ function getLocation() {
                     case error.TIMEOUT:
                         alert("The request to get your location timed out.");
                         break;
+                    case error.UNKNOWN_ERROR:
                     default:
                         alert("An unknown error occurred while trying to fetch your location.");
                         break;
@@ -380,10 +385,7 @@ async function main() {
 
     loadinfo.innerHTML = "Récupération de la position...";
 
-    /*let location = await getLocation();
-    const lat = location.latitude;
-    const lon = location.longitude;*/
-    let { latitude: lat, longitude: lon  } = await getLocation();
+    let { coords: { latitude: lat, longitude: lon } } = await getLocation();
     //const {lat, lon} = { lat: 48.861670, lon: 2.347886 };
 
     loadinfo.innerHTML = "Récupération des stations proches...";
