@@ -92,7 +92,6 @@ li {
     text-align: center;
     margin: 10px;
     border-radius: 5px;
-    z-index: 1002;
 }
 
 .leaflet-control-attribution {

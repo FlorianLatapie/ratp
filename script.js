@@ -2,6 +2,17 @@ let API_KEY = "";
 
 // setup shit
 
+// log function
+function logAppend(message) {
+    document.getElementById("loadinfo").innerHTML += message + "<br/>";
+    console.log(message);
+}
+
+function logSet(message) {
+    document.getElementById("loadinfo").innerHTML = message + "<br/>";
+    console.log("cleared\n" + message);
+}
+
 async function getApikey() {
     const response = await fetch("https://corsproxy.io/?url=https://me-deplacer.iledefrance-mobilites.fr/api/env");
 
@@ -92,7 +103,7 @@ async function launchFallbackMap() {
 async function getLocation() {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
-            console.warn("Geolocation is not supported by this browser.");
+            logAppend("Geolocation is not supported by this browser. Launching fallback map.");
             return reject(new Error("Geolocation is not supported by this browser."));
         }
 
@@ -103,17 +114,17 @@ async function getLocation() {
             (error) => {
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        console.warn("You have blocked location access. Please enable it in your browser settings.");
+                        logAppend("You have blocked location access. Please enable it in your browser settings.");
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        console.warn("Location information is unavailable.");
+                        logAppend("Location information is unavailable.");
                         break;
                     case error.TIMEOUT:
-                        console.warn("The request to get your location timed out.");
+                        logAppend("The request to get your location timed out.");
                         break;
                     case error.UNKNOWN_ERROR:
                     default:
-                        console.warn("An unknown error occurred while trying to fetch your location.");
+                        logAppend("An unknown error occurred while trying to fetch your location.");
                         break;
                 }
 
@@ -338,6 +349,7 @@ function populateDisruptions(disruptions) {
     }
 }
 
+
 function populateStations(stations) {
     const stationsContainer = document.getElementById("nextArrivalsContainer");
     stationsContainer.innerHTML = "<h2>Stations proches</h2>"; // Clear previous content
@@ -461,34 +473,32 @@ function startLiveCountdownUpdater() {
 
 async function main() {
     // setup
-    let loadinfo = document.getElementById("loadinfo");
-
     // loadinfo.innerHTML = "Récupération de la clé API...";
     API_KEY = "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx"; // await getApikey();
 
-    loadinfo.innerHTML = "Récupération de la position...";
+    logSet("Récupération de la position...");
 
     let { coords: { latitude: lat, longitude: lon } } = await getLocation();
     //const {lat, lon} = { lat: 48.861670, lon: 2.347886 };
 
-    loadinfo.innerHTML = "Récupération des stations proches...";
+    logAppend("Récupération des stations proches...");
 
     let { stations, lines } = await getStationsAndLinesFromLocation(lat, lon);
 
-    loadinfo.innerHTML = "Récupération des perturbations...";
+    logAppend("Récupération des perturbations...");
 
     // Display stations
     const disruptions = await getDisruptions(lines);
 
-    loadinfo.innerHTML = "Récupération des perturbations...";
+    logAppend("Récupération des perturbations...");
 
     populateDisruptions(disruptions);
 
-    loadinfo.innerHTML = "Affichage des stations proches...";
+    logAppend("Affichage des stations proches...");
 
     populateStations(stations);
 
-    loadinfo.innerHTML = `Dernier rafraîchissement :<br/>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+    logSet(`Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
 
     startLiveCountdownUpdater();
 }
