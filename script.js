@@ -17,11 +17,11 @@ async function getApikey() {
     const response = await fetch("https://corsproxy.io/?url=https://me-deplacer.iledefrance-mobilites.fr/api/env");
 
     const data = await response.json();
-    const output = data["ivApiKey"];
-    if (output != "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx") {
-        console.warn("API Key is not the default one");
+    const fetchedApiKey = data["ivApiKey"];
+    if (fetchedApiKey != "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx") {
+        logAppend("API Key is not the default one");
     }
-    return output;
+    return fetchedApiKey;
 }
 
 function loadLeaflet() {
@@ -153,8 +153,23 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
     const a = sinΔφ2 * sinΔφ2 + Math.cos(φ1) * Math.cos(φ2) * sinΔλ2 * sinΔλ2;
 
-    // Use 2 * asin instead of 2 * atan2 for better performance
-    return R_KM * 2 * Math.asin(Math.sqrt(a));
+    const res =  R_KM * 2 * Math.asin(Math.sqrt(a));
+    return res;
+}
+
+function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+    // Convert to radians in one go
+    const φ1 = lat1 * DEG_TO_RAD;
+    const φ2 = lat2 * DEG_TO_RAD;
+    const Δφ = (lat2 - lat1) * DEG_TO_RAD;
+    const Δλ = (lon2 - lon1) * DEG_TO_RAD;
+    
+    // Calculate half-chord distances
+    const sinΔφ2 = Math.sin(Δφ * 0.5);
+    const sinΔλ2 = Math.sin(Δλ * 0.5);
+    const a = sinΔφ2 * sinΔφ2 + Math.cos(φ1) * Math.cos(φ2) * sinΔλ2 * sinΔλ2;
+    const res = R_KM * 2 * Math.asin(Math.sqrt(a)) * 1000; // Convert to meters
+    return res;
 }
 
 async function getStationsAndLinesFromLocation(lat, lon) {
@@ -177,9 +192,9 @@ async function getStationsAndLinesFromLocation(lat, lon) {
         data = await stationsResponse.json();
         linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
         iterations++;
-        if (iterations > 5) {
-            // launch fallback map if no stations found after 5 iterations
-            console.warn("No stations found within the specified area. Launching fallback map.");
+        if (iterations > 3) {
+            // launch fallback map if no stations found after x iterations
+            logAppend("No stations found within the specified area. Launching fallback map.");
             return launchFallbackMap().then(({ coords: { latitude: lat, longitude: lon } }) => {
                 return getStationsAndLinesFromLocation(lat, lon);
             });
@@ -312,7 +327,9 @@ async function getNextTrains(lineId, stationId) {
     const data = await response.json();
     let allDepartures = data.nextDepartures.data.map(dep => ({ ...dep, realtime: true }));
 
-    if (allDepartures.length < 5) {
+
+
+    if (allDepartures.length < 4) {
         const numberOfItems = 4;
         const fallbackResponse = await fetch(`https://api-iv.iledefrance-mobilites.fr/lines/${lineId}/stop_areas/${stationId}/schedules/v2?items_per_schedule=${numberOfItems}&from_datetime=${new Date().toISOString()}`, requestOptions);
         const fallbackData = await fallbackResponse.json();
@@ -320,11 +337,23 @@ async function getNextTrains(lineId, stationId) {
         fallbackData.forEach(direction => {
             direction.dateTime.forEach(info => {
                 allDepartures.push({
-                    expectedArrivalTime: YYYYMMDDTHHMMSStoDate(info.dateTime).toISOString(),
+                    expectedDepartureTime: YYYYMMDDTHHMMSStoDate(info.dateTime).toISOString(),
                     lineDirection: direction.route.direction.name.split("(")[0].trim(),
                     realtime: false
                 });
             });
+        });
+    } else if (allDepartures.length > 10) {
+        // limit at 4 departures per direction
+        const directionsMap = {};
+        allDepartures = allDepartures.filter(dep => {
+            if (!directionsMap[dep.lineDirection]) {
+                directionsMap[dep.lineDirection] = 0;
+            }
+            if (directionsMap[dep.lineDirection] < 3) {
+                directionsMap[dep.lineDirection]++;
+                return true;
+            }
         });
     }
     return { nextTrainsAtMyStation: allDepartures };
@@ -350,14 +379,19 @@ function populateDisruptions(disruptions) {
 }
 
 
-function populateStations(stations) {
+
+
+function populateStations(stations, lat, lon) {
     const stationsContainer = document.getElementById("nextArrivalsContainer");
     stationsContainer.innerHTML = "<h2>Stations proches</h2>"; // Clear previous content
 
     stations.forEach(station => {
         const stationDiv = document.createElement("div");
         stationDiv.className = "station";
-        stationDiv.innerHTML = `<h3 class="station-name">${station.name}</h3>`;
+        const stationDistance = getDistanceInMeters(station.coordinates[1], station.coordinates[0], lat, lon);
+        // stationDiv.innerHTML = `<h3 class="station-name">${station.name} - ${stationDistance}m</h3>`;
+        // same but distance in m (do no display decimal places)
+        stationDiv.innerHTML = `<h3 class="station-name">${station.name} - ${Math.round(stationDistance)}m</h3>`;
         stationsContainer.appendChild(stationDiv);
 
         const linesList = document.createElement("div");
@@ -402,13 +436,13 @@ function populateStations(stations) {
                     directionsMap[direction].forEach(train => {
                         const trainItem = document.createElement("li");
                         trainItem.className = "train-item";
-                        trainItem.dataset.arrivalTime = new Date(train.expectedArrivalTime).getTime();
+                        trainItem.dataset.arrivalTime = new Date(train.expectedDepartureTime).getTime();
 
                         const remainingTimeText = document.createElement("span");
                         const trainTimeText = document.createElement("span");
 
 
-                        const parsedTime = new Date(train.expectedArrivalTime);
+                        const parsedTime = new Date(train.expectedDepartureTime);
                         const timeUntilNextTrain = parsedTime - Date.now();
                         const minutes = Math.floor(timeUntilNextTrain / 60000);
                         const seconds = Math.floor((timeUntilNextTrain % 60000) / 1000);
@@ -496,7 +530,7 @@ async function main() {
 
     logAppend("Affichage des stations proches...");
 
-    populateStations(stations);
+    populateStations(stations, lat, lon);
 
     logSet(`Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
 
