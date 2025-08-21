@@ -133,6 +133,9 @@ function populateStations(stations, lat, lon) {
 function startLiveCountdownUpdater() {
     setInterval(() => {
         const now = Date.now();
+        const clock = document.getElementById("clock");
+        clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
         const trainItems = document.querySelectorAll(".train-item");
 
         trainItems.forEach(trainItem => {
@@ -170,11 +173,6 @@ async function refreshData(lat, lon, refreshInterval) {
 
 
 async function main() {
-    let clock = document.getElementById("clock");
-    clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setInterval(() => {
-        clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }, 1000);
     logSet("Récupération de la position...");
 
     let { coords: { latitude: lat, longitude: lon } } = await getLocation(launchFallbackMap);

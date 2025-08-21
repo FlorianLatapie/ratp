@@ -63,7 +63,12 @@ li {
     transform: translateX(-50%);
     width: 40%;
     height: 60px;
-    background-color: rgba(255, 255, 255, 0.9);
+    background: linear-gradient(to right, #f6f6f6b3 0%, #f6f6f6b3 50%, #ffffffb3 50%, #ffffffb3 100%);
+
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    animation: blueWave 30s linear infinite;
+    animation-delay: 1s;
     backdrop-filter: blur(10px);
     color: var(--station-dark-text-color);
     display: flex;
@@ -73,6 +78,15 @@ li {
     font-weight: bold;
     font-size: 1.6em;
     border-radius: 0 0 10px 10px;
+}
+
+@keyframes blueWave {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: 0% 0;
+    }
 }
 
 body { 
