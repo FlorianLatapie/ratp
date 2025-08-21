@@ -183,7 +183,7 @@ async function getStationsAndLinesFromLocation(lat, lon) {
         iterations++;
         if (iterations > 3) {
             // launch fallback map if no stations found after x iterations
-            logAppend("No stations found within the specified area. Launching fallback map.");
+            logAppend("Aucune station trouvée dans la zone spécifiée. Lancement de la carte.");
             return launchFallbackMap().then(({ coords: { latitude: lat, longitude: lon } }) => {
                 return getStationsAndLinesFromLocation(lat, lon);
             });
@@ -268,9 +268,6 @@ async function getDisruptions(lines) {
             output.linesOK.push({ line: line });
             return;
         }
-        if (linesImpacted.mode == "RapidTransit") {
-            return; // ignore RER lines messages
-        }
 
         const disruptionsIds = linesImpacted.impactedObjects.flatMap(did => did.disruptionIds);
         const disruptionMessages = data.disruptions.filter(disruption => disruptionsIds.includes(disruption.id));
@@ -350,21 +347,32 @@ async function getNextTrains(lineId, stationId) {
 
 function populateDisruptions(disruptions) {
     const disruptionsContainer = document.getElementById("disruptions");
-    disruptionsContainer.innerHTML = "<h2>Perturbations</h2>"; // Clear previous content
-    /*if (disruptions.linesOK.length > 0) {
-        disruptionsContainer.innerHTML += `<p>Pas de perturbations pour le moment pour les lignes : ${disruptions.linesOK.map(line => line.line.shortName).join(", ")}</p>`;
-    }*/
+    disruptionsContainer.replaceChildren(); // Clear previous content
+
+    if (!disruptions || disruptions.disruptedLines.length === 0) {
+        disruptionsContainer.replaceChildren(); // Clear previous content
+        return;
+    }
+
+    const title = document.createElement("h2");
+    title.textContent = "Perturbations";
+    disruptionsContainer.appendChild(title);
+
     disruptions.disruptedLines.forEach(disruptedLine => {
         const line = disruptedLine.line;
-        disruptionsContainer.innerHTML += `<h4 class="ligne-${line.shortName}">Ligne ${line.shortName}</h4>`;
-        disruptedLine.messages.forEach(message => {
-            disruptionsContainer.innerHTML += `<p>${message.message}</p>`;
-        });
-    });
 
-    if (disruptions.disruptedLines.length === 0) {
-        disruptionsContainer.innerHTML = ""
-    }
+        const lineTitle = document.createElement("h4");
+        lineTitle.className = `ligne-${line.shortName}`;
+        lineTitle.textContent = `Ligne ${line.shortName}`;
+        disruptionsContainer.appendChild(lineTitle);
+
+        const lineDiv = document.createElement("div");
+        lineDiv.className = `disruption-paragraph`;
+        disruptedLine.messages.forEach(message => {
+            lineDiv.innerHTML += `${message.message}`;
+        });
+        disruptionsContainer.appendChild(lineDiv);
+    });
 }
 
 
