@@ -42,11 +42,6 @@ p {
     padding: 5px;
 }
 
-.disruption-paragraph {
-    overflow: auto;
-    max-height: 160px;
-}
-
 li {
     font-size: 1.5em;
     padding-left: 5px;
@@ -54,6 +49,35 @@ li {
     /* flexbox */
     display: flex;
     justify-content: space-around;
+}
+
+#clock {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    color: var(--station-dark-text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 0;
+    font-weight: bold;
+    font-size: 1.6em;
+    border-radius: 0 0 10px 10px;
+}
+
+body { 
+    background-color: white;
+    border-top: 60px solid #0062a1;
+}
+
+.disruption-paragraph {
+    overflow: auto;
+    max-height: 160px;
 }
 
 .station-name {
