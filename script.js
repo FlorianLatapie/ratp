@@ -159,6 +159,16 @@ function startLiveCountdownUpdater() {
     }, 1000);
 }
 
+async function refreshData(lat, lon, refreshInterval) {
+    logAppend("Rafraîchissement des données...");
+    const { stations, lines } = await getStationsAndLinesFromLocation(lat, lon, launchFallbackMap);
+    const disruptions = await getDisruptions(lines);
+    populateDisruptions(disruptions);
+    populateStations(stations, lat, lon);
+    logSet(`Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}\nRafraîchissement toutes les ${refreshInterval / 1000} secondes`);
+}
+
+
 async function main() {
     logSet("Récupération de la position...");
 
@@ -166,7 +176,7 @@ async function main() {
 
     logAppend("Récupération des stations proches...");
 
-    let { stations, lines } = await getStationsAndLinesFromLocation(lat, lon, launchFallbackMap);
+    let { stations, lines, coords:newCoords } = await getStationsAndLinesFromLocation(lat, lon, launchFallbackMap);
 
     let lastRefreshDate = new Date();
 
@@ -181,11 +191,22 @@ async function main() {
 
     logAppend("Affichage des stations proches...");
 
+    if (newCoords) {
+        lat = newCoords.latitude;
+        lon = newCoords.longitude;
+    }
+
     populateStations(stations, lat, lon);
 
-    logSet(`Dernier rafraîchissement : ${lastRefreshDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
+    let refreshInterval = 30_000; // 30 seconds
+
+    logSet(`Dernier rafraîchissement : ${lastRefreshDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}\nRafraîchissement toutes les ${refreshInterval / 1000} secondes`);
 
     startLiveCountdownUpdater();
+
+    setInterval(() => {
+        refreshData(lat, lon, refreshInterval);
+    }, refreshInterval);
 }
 
 main();

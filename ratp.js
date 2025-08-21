@@ -43,7 +43,7 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
             });
         }
     } while (data.features.length === 0);
-    
+
     const nearbyStationsMap = new Map();
     const nearbyLinesMap = new Map();
 
@@ -83,7 +83,11 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
             const distB = getDistance(lat, lon, b.coordinates[1], b.coordinates[0]);
             return distA - distB;
         }),
-        lines: Array.from(nearbyLinesMap.values()).sort((a, b) => a.externalCode.localeCompare(b.externalCode))
+        lines: Array.from(nearbyLinesMap.values()).sort((a, b) => a.externalCode.localeCompare(b.externalCode)),
+        coords: {
+            latitude: lat,
+            longitude: lon
+        }
     };
 }
 
