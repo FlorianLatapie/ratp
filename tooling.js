@@ -37,3 +37,13 @@ export function formatTimeRemaining(ms){
     const seconds = Math.floor((ms % 60000) / 1000);
     return { minutes, seconds };
 }
+
+export function logAppend(message) {
+    document.getElementById("loadinfo").innerHTML += message + "<br/>";
+    console.log(message);
+}
+
+export function logSet(message) {
+    document.getElementById("loadinfo").innerHTML = message + "<br/>";
+    console.log("cleared\n" + message);
+}

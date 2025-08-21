@@ -2,14 +2,14 @@ import { getDistance } from "./mymath.js";
 import { YYYYMMDDTHHMMSStoDate } from "./tooling.js";
 
 
-const API_KEY = "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx"; // default API key, will be replaced by the fetched one
+let API_KEY = "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx";
 
 export async function getApikey() {
     const response = await fetch("https://corsproxy.io/?url=https://me-deplacer.iledefrance-mobilites.fr/api/env");
 
     const data = await response.json();
     const fetchedApiKey = data["ivApiKey"];
-    if (fetchedApiKey != "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx") {
+    if (fetchedApiKey != API_KEY) {
         logAppend("API Key is not the default one");
     }
     return fetchedApiKey;
@@ -37,17 +37,13 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
         linesMap = new Map(allLines.map(line => [line.externalCode, line.shortName]));
         iterations++;
         if (iterations > 3) {
-            // launch fallback map if no stations found after x iterations
-            /*return launchFallbackMap().then(({ coords: { latitude: lat, longitude: lon } }) => {
-                return getStationsAndLinesFromLocation(lat, lon);
-            });*/
             // launch fallback function that is passed, we do not check if it is defined because it is always defined and passed
-
             return fallbackFunction().then(({ coords: { latitude: lat, longitude: lon } }) => {
                 return getStationsAndLinesFromLocation(lat, lon, fallbackFunction);
             });
         }
     } while (data.features.length === 0);
+    
     const nearbyStationsMap = new Map();
     const nearbyLinesMap = new Map();
 
@@ -111,9 +107,6 @@ export async function getDisruptions(lines) {
         if (!linesImpacted) {
             output.linesOK.push({ line: line });
             return;
-        }
-        if (linesImpacted.mode == "RapidTransit") {
-            return; // ignore RER lines messages
         }
 
         const disruptionsIds = linesImpacted.impactedObjects.flatMap(did => did.disruptionIds);
