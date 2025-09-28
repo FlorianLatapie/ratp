@@ -111,8 +111,10 @@ function populateStations(stations, lat, lon) {
                                 remainingTimeText.textContent = `${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
                                 trainTimeText.textContent = `à ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
                             } else {
-                                remainingTimeText.textContent = `${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                                trainTimeText.textContent = " (théorique)";
+                                //remainingTimeText.textContent = `${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                                //trainTimeText.textContent = " (théorique)";
+                                remainingTimeText.textContent = "(théorique)";
+                                trainTimeText.textContent = `à ${parsedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
                                 trainItem.classList.add("theoretical");
                             }
                         }
@@ -168,7 +170,7 @@ async function refreshData(lat, lon, refreshInterval) {
     const disruptions = await getDisruptions(lines);
     populateDisruptions(disruptions);
     populateStations(stations, lat, lon);
-    logSet(`Dernier rafraîchissement : ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}\nRafraîchissement toutes les ${refreshInterval / 1000} secondes`);
+    logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000} secondes`);
 }
 
 
@@ -203,9 +205,12 @@ async function main() {
 
     let refreshInterval = 30_000; // 30 seconds
 
-    logSet(`Dernier rafraîchissement : ${lastRefreshDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}\nRafraîchissement toutes les ${refreshInterval / 1000} secondes`);
+    logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000} secondes`);
 
     startLiveCountdownUpdater();
+
+    const footer = document.querySelector("footer");
+    footer.style.display = "block";
 
     setInterval(() => {
         refreshData(lat, lon, refreshInterval);

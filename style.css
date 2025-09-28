@@ -9,6 +9,10 @@
     --station-light-text-color: #FFFFFF;
 }
 
+ul {
+    font-family: monospace;
+}
+
 h1 {
     font-size: 3em;
 }
