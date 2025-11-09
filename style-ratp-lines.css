@@ -1,0 +1,220 @@
+.ligne-1 {
+    background-color: #FFBE00;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-2 {
+    background-color: #0055C8;
+    color: var(--station-light-text-color);
+}
+
+.ligne-3 {
+    background-color: #6E6E00;
+    color: var(--station-light-text-color)
+}
+
+.ligne-3B {
+    background-color: #6EC4E8;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-4 {
+    background-color: #A0006E;
+    color: var(--station-light-text-color);
+}
+
+.ligne-5 {
+    background-color: #FF7E2E;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-6 {
+    background-color: #6ECA97;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-7 {
+    background-color: #F49FB3;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-7B {
+    background-color: #6ECA97;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-8 {
+    background-color: #D282BE;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-9 {
+    background-color: #B6BD00;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-10 {
+    background-color: #C9910D;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-11 {
+    background-color: #704B1C;
+    color: var(--station-light-text-color);
+}
+
+.ligne-12 {
+    background-color: #007852;
+    color: var(--station-light-text-color);
+}
+
+.ligne-13 {
+    background-color: #6EC4E8;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-14 {
+    background-color: #62259D;
+    color: var(--station-light-text-color);
+}
+
+.ligne-A {
+    background-color: #EB2132;
+    color: var(--station-light-text-color);
+}
+
+.ligne-B {
+    background-color: #5091CB;
+    color: var(--station-light-text-color);
+}
+
+.ligne-C {
+    background-color: #FFCC30;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-D {
+    background-color: #008B5B;
+    color: var(--station-light-text-color);
+}
+
+.ligne-E {
+    background-color: #B94E9A;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T1 {
+    background-color: #003CA6;
+    color: var(--station-light-text-color);
+}   
+
+.ligne-T2 {
+    background-color: #CF009E;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T3a {
+    background-color: #FF7E2E;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-T3b {
+    background-color: #00AE41;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T4 {
+    background-color: #DFAF47;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-T5 {
+    background-color: #62259D;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T6 {
+    background-color: #E2231A;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T7 {
+    background-color: #704B1C;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T8 {
+    background-color: #837902;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-T9 {
+    background-color: #3C91DC;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T10 {
+    background-color: #6E6E00;
+    color: var(--station-light-text-color);
+}
+
+.ligne-T11 {
+    background-color: #F58F53;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-T12 {
+    background-color: #A50034;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-T13 {
+    background-color: #8D653D;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-T14 {
+    background-color: #00A092;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-H {
+    background-color: #84653D;
+    color: var(--station-light-text-color);
+}   
+
+.ligne-J {
+    background-color: #CEC73D;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-K {
+    background-color: #9B9842;
+    color: var(--station-light-text-color);
+}
+
+.ligne-L {
+    background-color: #C4A4CC;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-N {
+    background-color: #00B297;
+    color: var(--station-light-text-color);
+}
+
+.ligne-O {
+    background-color: #5EC5ED;
+    color: var(--station-light-text-color);
+}
+
+.ligne-P {
+    background-color: #F58F53;
+    color: var(--station-dark-text-color);
+}
+
+.ligne-R {
+    background-color: #F49FB3;
+    color: var(--station-dark-text-color);
+}
+

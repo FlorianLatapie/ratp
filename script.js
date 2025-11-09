@@ -12,9 +12,20 @@ function populateDisruptions(disruptions) {
         return;
     }
 
-    const title = document.createElement("h2");
+    /*const title = document.createElement("h2");
     title.textContent = "Perturbations";
-    disruptionsContainer.appendChild(title);
+    disruptionsContainer.appendChild(title);*/
+
+    const perturbationsSummary = document.createElement("summary");
+    perturbationsSummary.className = "h2-summary";
+    perturbationsSummary.textContent = "Perturbations";
+    disruptionsContainer.appendChild(perturbationsSummary);
+    
+    const perturbationsDetails = document.createElement("details");
+    perturbationsDetails.appendChild(perturbationsSummary);
+    disruptionsContainer.appendChild(perturbationsDetails);
+    perturbationsDetails.setAttribute("open", "true");
+
 
     disruptions.disruptedLines.forEach(disruptedLine => {
         const line = disruptedLine.line;
@@ -35,7 +46,7 @@ function populateDisruptions(disruptions) {
         });
 
         details.appendChild(lineDiv);
-        disruptionsContainer.appendChild(details);
+        perturbationsDetails.appendChild(details);
     });
 }
 
