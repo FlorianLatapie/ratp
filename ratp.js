@@ -78,7 +78,7 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
     });
     nearbyStationsMap.forEach(station => {
         try {
-            station.lines.sort((a, b) => a.shortName.localeCompare(b.shortName));
+            station.lines.sort((a, b) => a.shortName.localeCompare(b.shortName, undefined, { numeric: true, sensitivity: 'base' }));
         } catch (e) {
             logAppend("Error sorting lines for station " + station.name + " " + e);
         }
@@ -86,7 +86,7 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
 
     let sortedLines = Array.from(nearbyLinesMap.values());
     try {
-        sortedLines = sortedLines.sort((a, b) => a.shortName.localeCompare(b.shortName));
+        sortedLines = sortedLines.sort((a, b) => a.shortName.localeCompare(b.shortName, undefined, { numeric: true, sensitivity: 'base' }));
     } catch (e) {
         logAppend("Error filtering lines " + e);
     }
