@@ -1,5 +1,5 @@
 import { getDistance } from "./mymath.js";
-import { YYYYMMDDTHHMMSStoDate } from "./tooling.js";
+import { YYYYMMDDTHHMMSStoDate, logAppend } from "./tooling.js";
 
 
 let API_KEY = "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx";
@@ -76,15 +76,21 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
             });
         }
     });
+    nearbyStationsMap.forEach(station => {
+        try {
+            station.lines.sort((a, b) => a.shortName.localeCompare(b.shortName));
+        } catch (e) {
+            logAppend("Error sorting lines for station " + station.name + " " + e);
+        }
+    });
 
-    let lines = Array.from(nearbyLinesMap.values());
-    let sortedLines = lines;
+    let sortedLines = Array.from(nearbyLinesMap.values());
     try {
-        sortedLines = lines.sort((a, b) => a.externalCode.localeCompare(b.externalCode));
+        sortedLines = sortedLines.sort((a, b) => a.shortName.localeCompare(b.shortName));
     } catch (e) {
         logAppend("Error filtering lines " + e);
     }
-
+    
     return {
         stations: Array.from(nearbyStationsMap.values()).sort((a, b) => {
             const distA = getDistance(lat, lon, a.coordinates[1], a.coordinates[0]);

@@ -47,3 +47,11 @@ export function logSet(message) {
     document.getElementById("loadinfo").innerHTML = message + "<br/>";
     console.log("cleared\n" + message);
 }
+
+export function getTextForLineSummary(shortName) {
+    if (/^\d/.test(shortName)) {
+        return `Métro ${shortName}`;
+    } else {
+        return `Ligne ${shortName}`;
+    }
+}

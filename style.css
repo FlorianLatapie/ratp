@@ -5,7 +5,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    --station-dark-text-color: #25303B;
+    --station-dark-text-color: black; /*#25303B;*/
     --station-light-text-color: #FFFFFF;
 }
 
@@ -30,7 +30,8 @@ h3 {
     font-size: 2.2em;
 }
 
-h4 {
+h4, .h4-summary {
+    font-weight: bold;
     font-size: 2em;
     padding: 5px;
 }

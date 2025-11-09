@@ -1,5 +1,5 @@
 import { getDistanceInMeters } from "./mymath.js";
-import { getLocation, formatTimeRemaining, logAppend, logSet } from "./tooling.js";
+import { getLocation, formatTimeRemaining, logAppend, logSet, getTextForLineSummary } from "./tooling.js";
 import { getStationsAndLinesFromLocation, getDisruptions, getNextTrains} from "./ratp.js";
 import { launchFallbackMap } from "./map.js";
 
@@ -11,10 +11,6 @@ function populateDisruptions(disruptions) {
         disruptionsContainer.replaceChildren(); // Clear previous content
         return;
     }
-
-    /*const title = document.createElement("h2");
-    title.textContent = "Perturbations";
-    disruptionsContainer.appendChild(title);*/
 
     const perturbationsSummary = document.createElement("summary");
     perturbationsSummary.className = "h2-summary";
@@ -35,8 +31,8 @@ function populateDisruptions(disruptions) {
 
         const summary = document.createElement("summary");
         summary.className = `perturbed-line-header ligne-${line.shortName}`;
-        
-        summary.textContent = `Ligne ${line.shortName}`;
+
+        summary.textContent = getTextForLineSummary(line.shortName);
         details.appendChild(summary);
 
         const lineDiv = document.createElement("div");
@@ -65,11 +61,13 @@ function populateStations(stations, lat, lon) {
         const linesList = document.createElement("div");
 
         station.lines.forEach(line => {
-            const lineItem = document.createElement("div");
-            const lineTitle = document.createElement("h4");
-            lineTitle.textContent = `Ligne ${line.shortName}`;
-            lineTitle.className = `ligne-${line.shortName}`;
-            lineItem.appendChild(lineTitle);
+            // Bloc repliable pour chaque ligne
+            const lineItem = document.createElement("details");
+            const lineSummary = document.createElement("summary");
+            lineSummary.className = `ligne-${line.shortName} h4-summary`;
+            lineSummary.textContent = getTextForLineSummary(line.shortName);
+
+            lineItem.appendChild(lineSummary);
             linesList.appendChild(lineItem);
 
             // Conteneur pour séparer les terminus
