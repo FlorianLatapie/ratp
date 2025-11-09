@@ -23,7 +23,7 @@ function populateDisruptions(disruptions) {
         const details = document.createElement("details");
 
         const summary = document.createElement("summary");
-        summary.className = `ligne-${line.shortName}`;
+        summary.className = `perturbed-line-header ligne-${line.shortName}`;
         
         summary.textContent = `Ligne ${line.shortName}`;
         details.appendChild(summary);

@@ -17,7 +17,8 @@ h1 {
     font-size: 3em;
 }
 
-h2 {
+h2, .h2-summary {
+    font-weight: bold;
     font-size: 2.5em;
     background-color: #0062a1;
     color: var(--station-light-text-color);
@@ -34,7 +35,7 @@ h4 {
     padding: 5px;
 }
 
-summary {
+.perturbed-line-header {
     font-size: 1.7em;
     font-weight: bold;
     padding: 5px;
