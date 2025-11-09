@@ -175,6 +175,8 @@ async function refreshData(lat, lon, refreshInterval) {
 
 
 async function main() {
+    startLiveCountdownUpdater();
+
     logSet("Récupération de la position...");
 
     let { coords: { latitude: lat, longitude: lon } } = await getLocation(launchFallbackMap);
@@ -206,9 +208,6 @@ async function main() {
     let refreshInterval = 30_000; // 30 seconds
 
     logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000} secondes`);
-
-    startLiveCountdownUpdater();
-
     const footer = document.querySelector("footer");
     footer.style.display = "block";
 
