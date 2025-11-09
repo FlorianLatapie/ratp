@@ -5,6 +5,16 @@ import { launchFallbackMap } from "./map.js";
 
 function populateDisruptions(disruptions) {
     const disruptionsContainer = document.getElementById("disruptions");
+    
+    // Sauvegarder l'état des details ouverts
+    const openStates = new Map();
+    disruptionsContainer.querySelectorAll("details").forEach(details => {
+        const summary = details.querySelector("summary");
+        if (summary) {
+            openStates.set(summary.textContent, details.open);
+        }
+    });
+    
     disruptionsContainer.replaceChildren(); // Clear previous content
 
     if (!disruptions || disruptions.disruptedLines.length === 0) {
@@ -20,7 +30,14 @@ function populateDisruptions(disruptions) {
     const perturbationsDetails = document.createElement("details");
     perturbationsDetails.appendChild(perturbationsSummary);
     disruptionsContainer.appendChild(perturbationsDetails);
-    perturbationsDetails.setAttribute("open", "true");
+    
+    // Restaurer l'état du details principal "Perturbations"
+    const wasMainOpen = openStates.get("Perturbations");
+    if (wasMainOpen !== undefined) {
+        perturbationsDetails.open = wasMainOpen;
+    } else {
+        perturbationsDetails.setAttribute("open", "true");
+    }
 
 
     disruptions.disruptedLines.forEach(disruptedLine => {
@@ -42,12 +59,32 @@ function populateDisruptions(disruptions) {
         });
 
         details.appendChild(lineDiv);
+        
+        // Restaurer l'état ouvert/fermé de ce details
+        const wasOpen = openStates.get(summary.textContent);
+        if (wasOpen) {
+            details.open = true;
+        }
+        
         perturbationsDetails.appendChild(details);
     });
 }
 
 function populateStations(stations, lat, lon) {
     const stationsContainer = document.getElementById("nextArrivalsContainer");
+    
+    // Sauvegarder l'état des details ouverts
+    const openStates = new Map();
+    stationsContainer.querySelectorAll("details").forEach(details => {
+        const summary = details.querySelector("summary");
+        if (summary) {
+            // Créer une clé unique basée sur le nom de la station et de la ligne
+            const stationName = details.closest('.station')?.querySelector('.station-name')?.textContent || '';
+            const key = `${stationName}|${summary.textContent}`;
+            openStates.set(key, details.open);
+        }
+    });
+    
     stationsContainer.innerHTML = "<h2>Stations proches</h2>"; // Clear previous content
 
     stations.forEach(station => {
@@ -69,6 +106,13 @@ function populateStations(stations, lat, lon) {
 
             lineItem.appendChild(lineSummary);
             linesList.appendChild(lineItem);
+            
+            // Restaurer l'état ouvert/fermé de ce details
+            const key = `${stationNameText}|${lineSummary.textContent}`;
+            const wasOpen = openStates.get(key);
+            if (wasOpen) {
+                lineItem.open = true;
+            }
 
             // Conteneur pour séparer les terminus
             const directionsContainer = document.createElement("div");
@@ -185,7 +229,7 @@ async function refreshData(lat, lon, refreshInterval) {
     const disruptions = await getDisruptions(lines);
     populateDisruptions(disruptions);
     populateStations(stations, lat, lon);
-    logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000} secondes`);
+    logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000}s`);
 }
 
 
@@ -222,7 +266,7 @@ async function main() {
 
     let refreshInterval = 30_000; // 30 seconds
 
-    logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000} secondes`);
+    logSet(`Dernier rafraîchissement à ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })},<br/>Rafraîchissement toutes les ${refreshInterval / 1000}s`);
     const footer = document.querySelector("footer");
     footer.style.display = "block";
 
