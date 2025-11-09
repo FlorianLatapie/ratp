@@ -79,8 +79,10 @@ function populateStations(stations, lat, lon) {
         const summary = details.querySelector("summary");
         if (summary) {
             // Créer une clé unique basée sur le nom de la station et de la ligne
-            const stationName = details.closest('.station')?.querySelector('.station-name')?.textContent || '';
-            const key = `${stationName}|${summary.textContent}`;
+            const stationTitle = details.closest('.station')?.querySelector('.station-name')?.textContent || '';
+            // Ne garder que le nom de station sans la distance (ex: "Station X - 120m" => "Station X")
+            const baseStationName = stationTitle.split(' - ')[0].trim();
+            const key = `${baseStationName}|${summary.textContent}`;
             openStates.set(key, details.open);
         }
     });
@@ -108,9 +110,8 @@ function populateStations(stations, lat, lon) {
             linesList.appendChild(lineItem);
             
             // Restaurer l'état ouvert/fermé de ce details
-            const key = `${lineSummary.textContent}`;
-            const wasOpen = openStates.get(key);
-            if (wasOpen) {
+            const key = `${station.name}|${lineSummary.textContent}`;
+            if (openStates.get(key)) {
                 lineItem.open = true;
             }
 

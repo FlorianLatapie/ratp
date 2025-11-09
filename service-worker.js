@@ -1,16 +1,16 @@
 const CACHE_NAME = 'ratp-cache-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/style-ratp-lines.css',
-  '/script.js',
-  '/ratp.js',
-  '/mymath.js',
-  '/tooling.js',
-  '/map.js',
-  '/manifest.json',
-  '/favicon.png'
+  './',
+  './index.html',
+  './style.css',
+  './style-ratp-lines.css',
+  './script.js',
+  './ratp.js',
+  './mymath.js',
+  './tooling.js',
+  './map.js',
+  './manifest.json',
+  './favicon.png'
 ];
 
 self.addEventListener('install', event => {

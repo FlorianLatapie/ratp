@@ -1,15 +1,16 @@
 {
-  "name": "RATP",
-  "short_name": "RATP",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0062a1",
-  "icons": [
-    {
-      "src": "favicon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+    "name": "RATP",
+    "short_name": "RATP",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0062a1",
+    "icons": [
+        {
+            "src": "favicon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "id": "FlorianLatapie/ratp"
 }
