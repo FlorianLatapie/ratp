@@ -77,13 +77,21 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
         }
     });
 
+    let lines = Array.from(nearbyLinesMap.values());
+    let sortedLines = lines;
+    try {
+        sortedLines = lines.sort((a, b) => a.externalCode.localeCompare(b.externalCode));
+    } catch (e) {
+        logAppend("Error filtering lines " + e);
+    }
+
     return {
         stations: Array.from(nearbyStationsMap.values()).sort((a, b) => {
             const distA = getDistance(lat, lon, a.coordinates[1], a.coordinates[0]);
             const distB = getDistance(lat, lon, b.coordinates[1], b.coordinates[0]);
             return distA - distB;
         }),
-        lines: Array.from(nearbyLinesMap.values()).sort((a, b) => a.externalCode.localeCompare(b.externalCode)),
+        lines: sortedLines,
         coords: {
             latitude: lat,
             longitude: lon

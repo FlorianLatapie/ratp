@@ -19,17 +19,23 @@ function populateDisruptions(disruptions) {
     disruptions.disruptedLines.forEach(disruptedLine => {
         const line = disruptedLine.line;
 
-        const lineTitle = document.createElement("h4");
-        lineTitle.className = `ligne-${line.shortName}`;
-        lineTitle.textContent = `Ligne ${line.shortName}`;
-        disruptionsContainer.appendChild(lineTitle);
+        // Bloc repliable pour chaque ligne
+        const details = document.createElement("details");
+
+        const summary = document.createElement("summary");
+        summary.className = `ligne-${line.shortName}`;
+        
+        summary.textContent = `Ligne ${line.shortName}`;
+        details.appendChild(summary);
 
         const lineDiv = document.createElement("div");
         lineDiv.className = `disruption-paragraph`;
         disruptedLine.messages.forEach(message => {
             lineDiv.innerHTML += `${message.message}`;
         });
-        disruptionsContainer.appendChild(lineDiv);
+
+        details.appendChild(lineDiv);
+        disruptionsContainer.appendChild(details);
     });
 }
 
