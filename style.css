@@ -56,14 +56,13 @@ p {
 
 .disruption-paragraph {
     overflow: auto;
-    max-height: 160px;
+    /*max-height: 400px;*/
 }
 
 li {
     font-size: 1.5em;
     padding-left: 5px;
 
-    /* flexbox */
     display: flex;
     justify-content: space-around;
 }
@@ -104,11 +103,6 @@ li {
 body { 
     background-color: white;
     border-top: 60px solid #0062a1;
-}
-
-.disruption-paragraph {
-    overflow: auto;
-    max-height: 160px;
 }
 
 .station-name {
