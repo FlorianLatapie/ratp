@@ -108,7 +108,7 @@ function populateStations(stations, lat, lon) {
             linesList.appendChild(lineItem);
             
             // Restaurer l'état ouvert/fermé de ce details
-            const key = `${stationNameText}|${lineSummary.textContent}`;
+            const key = `${lineSummary.textContent}`;
             const wasOpen = openStates.get(key);
             if (wasOpen) {
                 lineItem.open = true;
@@ -273,6 +273,15 @@ async function main() {
     setInterval(() => {
         refreshData(lat, lon, refreshInterval);
     }, refreshInterval);
+}
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('ServiceWorker registered:', reg))
+            .catch(err => console.error('ServiceWorker registration failed:', err));
+    });
 }
 
 main();
