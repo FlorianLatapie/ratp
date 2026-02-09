@@ -2,10 +2,7 @@
 
 * {
     font-family: "Raleway", sans-serif;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    --station-dark-text-color: black; /*#25303B;*/
+    --station-dark-text-color: black;
     --station-light-text-color: #FFFFFF;
 }
 
