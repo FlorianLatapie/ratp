@@ -27,8 +27,8 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
         modifyY *= 1.5;
         const bbox = `BBOX(geometry,${lon - modifyX},${lat - modifyY},${lon + modifyX},${lat + modifyY},'EPSG:4326')`;
 
-        const url = `https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=${bbox}`;
-
+        const url = `https://corsproxy.io/?url=https://api-iv.iledefrance-mobilites.fr/map/server/services/wms?service=WFS&request=GetFeature&srsName=EPSG:4326&outputFormat=application/json&typeNames=vianavigo:stations&cql_filter=${bbox}`;
+        
         const stationsResponse = await fetch(url, {
             headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
         });
