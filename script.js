@@ -193,7 +193,7 @@ function populateStations(stations, lat, lon) {
 }
 
 function startLiveCountdownUpdater() {
-    setInterval(() => {
+    const updateLiveUI = () => {
         const now = Date.now();
         const clock = document.getElementById("clock");
         clock.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -221,7 +221,10 @@ function startLiveCountdownUpdater() {
                 trainTimeText.textContent = `à ${new Date(arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
             }
         });
-    }, 1000);
+    };
+
+    updateLiveUI();
+    setInterval(updateLiveUI, 1000);
 }
 
 async function refreshData(lat, lon, refreshInterval) {
