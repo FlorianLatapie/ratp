@@ -5,14 +5,22 @@ import { YYYYMMDDTHHMMSStoDate, logAppend } from "./tooling.js";
 let API_KEY = "vNcCf2jKkRtDywAcrARI2Mspn8OAXuFx";
 
 export async function getApikey() {
-    const response = await fetch("https://corsproxy.io/?url=https://me-deplacer.iledefrance-mobilites.fr/api/env");
-
-    const data = await response.json();
-    const fetchedApiKey = data["ivApiKey"];
-    if (fetchedApiKey != API_KEY) {
-        logAppend("API Key is not the default one");
+    try {
+        const response = await fetch("https://corsproxy.io/?url=https://me-deplacer.iledefrance-mobilites.fr/api/env");
+        if (!response.ok) {
+            logAppend(`⚠️ Erreur récupération clé API (${response.status})`);
+            return API_KEY;
+        }
+        const data = await response.json();
+        const fetchedApiKey = data["ivApiKey"];
+        if (fetchedApiKey != API_KEY) {
+            logAppend("API Key is not the default one");
+        }
+        return fetchedApiKey;
+    } catch (error) {
+        logAppend(`⚠️ Impossible de récupérer la clé API: ${error.message}`);
+        return API_KEY;
     }
-    return fetchedApiKey;
 }
 
 export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction) {
@@ -106,10 +114,17 @@ export async function getStationsAndLinesFromLocation(lat, lon, fallbackFunction
 }
 
 export async function getLines() {
-    const response = await fetch("https://api-iv.iledefrance-mobilites.fr/lines?mode=Metro%3BTramway%3BRapidTransit%3BregionalRail%3BLocalTrain%3BRailShuttle%3BFunicular", {
-        headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
-    });
-    return await response.json();
+    try {
+        const response = await fetch("https://api-iv.iledefrance-mobilites.fr/lines?mode=Metro%3BTramway%3BRapidTransit%3BregionalRail%3BLocalTrain%3BRailShuttle%3BFunicular", {
+            headers: { "Apikey": API_KEY, "Host": "api-iv.iledefrance-mobilites.fr" }
+        });
+        if (!response.ok) {
+            logAppend(`⚠️ Erreur récupération lignes (${response.status})`);
+        }
+        return await response.json();
+    } catch (error) {
+        logAppend(`⚠️ Impossible de récupérer les lignes: Bloqué par RATP`);
+    }
 }
 
 export async function getDisruptions(lines) {
